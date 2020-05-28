@@ -1,0 +1,282 @@
+\chapter{Introduction to Predictive Maintenance}
+\label{chapter:pdm}
+
+In this chapter we provide an introduction to the problematic of \acrshort{pdm}.
+In Section \ref{sec:pdm_motivation} we explain the motivation in context of other maintenance strategies.
+In Section \ref{sec:pdm_data}, we describe condition monitoring, a fundamental process of \acrshort{pdm}, which consists in gathering data that can help reveal the condition of the subject.
+Finally, in Section \ref{sec:pdm_approaches} we provide an introduction to different approaches to \acrshort{pdm}, i.e. how can be condition monitoring data used to predict the condition of the subject.
+
+\section{Motivation}
+\label{sec:pdm_motivation}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        pdm_machine_life.png}
+    \caption{Machinery life stages \cite{bilosova2012vibration}.}
+    \label{fig:pdm_machine_life}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}{.5\textwidth}
+        \includegraphics[width=\linewidth]{%
+            data_bearing_faults.jpg}
+        \caption{fault}
+    \end{subfigure}%
+    \begin{subfigure}{.5\textwidth}
+        \includegraphics[width=\linewidth]{%
+            intro_wind_turbine_failure.jpg}
+        \caption{failure}
+    \end{subfigure}
+    \caption{The difference between a fault and a failure: (\textbf{a}) a fault of a bearing \cite{lei2018machinery};
+             (\textbf{b}) a failure of a wind turbine \cite{wind_turbine_failure}.}
+    \label{fig:intro_fault_failure}
+\end{figure}
+
+A life-cycle of industrial machinery consists of several stages with the operation stage usually being the longest stage of all \cite{bilosova2012vibration}, as illustrated in Figure \ref{fig:pdm_machine_life}.
+During this stage the machinery might develop a fault or may naturally degrade.
+Both a fault and a degradation have a negative effect on its health, i.e. its ability to operate.
+Moreover, the fault or the degradation can grow in severity over time and may lead to a failure \cite{lei2018machinery, wind_turbine_failure}.
+Figure \ref{fig:intro_fault_failure} illustrates a difference between a fault and a failure.
+A failure may be either an inability of the subject to operate at all which causes downtime or it might be considered as reaching some threshold of permissible degradation, commonly called a failure threshold \cite{lei2018machinery}.
+In both the cases the failure is a highly unwanted event which decreases reliability and may costs a high amount of resources, both human and financial, to fix \cite{mobley2002introduction}.
+
+The industrial machinery is a typical example where faults, degradation and failures occur.
+However, it is definitely not limited to the industrial machinery.
+Hard drive can fail \cite{murray2005machine}, network faults can occur \cite{feather1993fault} and, with a bit of exaggeration, even humans can suffer from a fault, can degrade and eventually fail, e.g. a hearth failures \cite{choi2017using, ng2016early}.
+Therefore, to express this generality we will stick to the term subject.
+
+To preserve the health of the subject maintenance actions are performed during which an action that mitigates the fault or the degradation is executed, e.g. a replacement of a faulty part such as a bearing \cite{mobley2002introduction}.
+There exist two classical maintenance strategies: reactive (also called corrective) and preventive \cite{ran2019survey}.
+
+\paragraph{Reactive Maintenance}
+Reactive maintenance strategy is performed as a reaction to a failure.
+It is sometimes also referred to as a corrective maintenance as a failed component/part is typically repaired or corrected \cite{ran2019survey}.
+Reactive maintenance strategy reduces the amount of maintenance actions (they are done only when absolutely needed).
+However, reactive maintenance requires high availability of the personnel responsible for the maintenance actions as the failure might happen e.g. in the middle of the night and, most importantly, and, most importantly, it does not prevent a failure --- so there is either a downtime or unsafe operation.
+
+\paragraph{Preventive Maintenance}
+The second strategy called preventive maintenance is based on scheduling the maintenance actions at predefined intervals such as twice a year \cite{ran2019survey}.
+Preventive maintenance can significantly reduce the risk of failures as the subject is regularly checked, but may schedule maintenance actions even when it is not necessary which increases maintenance costs \cite{ran2019survey}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth, keepaspectratio]{%
+        pdm_maintenance_planning.png}
+    \caption{Maintenance plans of RM, PM and PdM \cite{ran2019survey}.}
+    \label{fig:pdm_maintenance_planning}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth, keepaspectratio]{%
+        pdm_costs.png}
+    \caption{Costs of maintenance strategies \cite{sanger_2019}.}
+    \label{fig:pdm_costs}
+\end{figure}
+
+\paragraph{Predictive Maintenance}
+Predictive maintenance strategy aims for a compromise between the two classical strategies mentioned above by scheduling the maintenance only when the subject exhibits signs of a fault or degradation \cite{ran2019survey}.
+Figure \ref{fig:pdm_maintenance_planning} illustrates planning of maintenance actions according to a reactive, preventive and predictive strategies. 
+Figure \ref{fig:pdm_costs} illustrates the reduction of costs predictive maintenance brings.
+The main goal of predictive maintenance is to monitor and analyze the condition of the subject and provide the personnel responsible for the maintenance scheduling the information about the subject's condition so that a maintenance action can be scheduled when needed \cite{mobley2002introduction, ran2019survey}.
+
+\section{Condition Monitoring}
+\label{sec:pdm_data}
+
+Condition monitoring is a process of collecting information that might reveal the health state of a subject \cite{wang2017new}.
+The health state of the subject can be observed directly, e.g. the amount of wear of a cutting machine \cite{data_set_milling}, or indirectly such as measuring operating conditions of a subject (e.g. outside temperature) or calculating time from last maintenance action \cite{data_set_azure_ai_gallery}.
+In this section we describe various sources of the condition monitoring data.
+
+\subsection{Operational Settings}
+Operational settings are any subject specific settings such as load, speed, cycle number or current firmware version and may change over time \cite{data_set_turbofan}.
+Operational settings might affect how fast the subject degrades, e.g. a subject operating under higher loads than the rest of the subjects is likely to degrade sooner.
+
+\subsection{Environment data}
+Environment data include any information about the environment where the subject operates, the external factors.
+Common environment data include outside temperature, geolocation or season of the year.
+Environment data might be important predictors of health as they might have effect on how the subject operates.
+For example a compressor might have a higher energy consumption during winter than during summer, during which such high energy consumption might be considered as anomalous and thus might signify a fault.
+The outside temperature of the environment can also have significant effect on how fast the capacity of a lithium-ion battery degrade \cite{ma2018temperature}.
+
+\subsection{Sensor Data}
+
+Sensor data such as pressure, vibration or acoustic noise are one of the most commonly measured condition monitoring data \cite{ran2019survey}.
+The sensors can measure directly the subject, e.g. vibrations of rotating machinery such as pressure in a compressor, or they might measure the environment where the subject is operating, thus being basically source of environment data mentioned above \cite{bilosova2012vibration}.
+
+\begin{figure}
+    \includegraphics[width=\textwidth,keepaspectratio]{%
+        data_sensor_driving_frequency_faults.png}
+	\centering
+	\caption{Four frequency spectra of rotating machinery vibration signals
+	         each representing different health state. On the x-axes are frequencies while
+	         on the y-axes are amplitudes. F is a driving frequency
+	         --- the frequency equivalent to the speed of rotating.}
+	\label{fig:data_sensor_driving_frequency_faults}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{\textwidth}
+        \includegraphics[width=1\linewidth, keepaspectratio]{%
+            data_sensor_wavelet_healthy.pdf}
+        \caption{wavelet spectrogram of a healthy gearbox}
+    \end{subfigure}%
+    \\
+    \begin{subfigure}[b]{\textwidth}
+        \includegraphics[width=1\linewidth]{%
+            data_sensor_wavelet_faulty.png}
+        \caption{wavelet spectrogram of a faulty gearbox}
+    \end{subfigure}
+    \\
+    \begin{subfigure}[b]{\textwidth}
+        \centering
+        \includegraphics[width=.4\textwidth]{%
+            data_gear_fault.jpg}
+        \caption{a photo of the fault}
+    \end{subfigure}
+    \caption{Wavelet spectrograms of vibration data from a healthy and a faulty gearbox
+             where the dashed vertical line separates individual rotation cycles
+             \cite{lukany2018} and a photo of the fault in the gearbox \cite{data_acoustics_gear}.
+             The faulty gearbox had a broken tooth and an increase in amplitude (darker color)
+             once per revolution can be seen in the spectrogram.}
+    \label{fig:data_sensor_wavelet}
+\end{figure}
+
+The sensor data are typically in a form of time series, sampled at periodic intervals.
+For sensor where the observed variable doesn't change as frequently (e.g. temperature) the sampling frequency can be relatively low such as one sample per hour.
+However, in case of e.g. vibration or acoustic signals measured on fast rotating machinery the sampling frequency is commonly in KHz, i.e. thousands of samples per second \cite{westernbearing}.
+
+Sensor data can be used in their natural time representation, i.e. a waveform.
+However, there exist several preprocessing techniques that can transform the data into different representation where faults can be more easily revealed such as Fourier or Wavelet transforms which transform the data to frequency or time-frequency representations, respectively.
+These transformations are especially suitable for revealing faults in rotating machinery where an increase of amplitude at certain frequencies can signify a fault \cite{lukany2018}.
+Figure \ref{fig:data_sensor_driving_frequency_faults} shows frequency spectra of vibration data of rotating machinery in different health states.
+Figure \ref{fig:data_sensor_wavelet} shows time-frequency spectrograms of healthy and a faulty gearbox obtained by a wavelet transform and a photo of the fault.
+
+\subsection{Static Data}
+
+Static data include data associated with the subject that do not change over time such as installation date or model type.
+Installation date might be used to calculate an age of the subject --- usually the higher the age the higher the probability of a failure \cite{mobley2002introduction}.
+Similarly the model type can be indicative of how likely is an occurrence of a failure \cite{data_set_azure_ai_gallery} --- e.g. a fault might frequently occur after around two years of operation for for some model types.
+
+\paragraph{Events}
+
+Various events such as alarms, maintenance actions or failures can happen during operation of the subject \cite{data_set_azure_ai_gallery}.
+Information about past events such as number of recent alarms in past month or time from last maintenance might be indicative of how likely is the subject to fail, e.g. the longer the time from last maintenance the more likely is that it will fail in near future.
+
+\subsection{Health Label}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}{.33\textwidth}
+        \includegraphics[width=\linewidth, keepaspectratio]{%
+            data_degradation_cfrp_baseline.jpg}
+        \caption{healthy}
+    \end{subfigure}%
+    \begin{subfigure}{.33\textwidth}
+        \includegraphics[width=\linewidth]{%
+            data_degradation_cfrp_moderate.jpg}
+        \caption{moderate fault}
+    \end{subfigure}%
+    \begin{subfigure}{.33\textwidth}
+        \includegraphics[width=\linewidth]{%
+            data_degradation_cfrp_damaged.jpg}
+        \caption{severe fault}
+    \end{subfigure}
+    \caption{X-ray images carbon fiber reinforced polymer panels degradation
+             \cite{data_set_cfrp}.}
+    \label{fig:data_degradation_cfrp}
+\end{figure}
+
+Health label is a direct representation of a subject's health state.
+The health label can be either binary, e.g. healthy or faulty/failed, or multiclass where the different values might represent for example either a healthy state, different fault modes or different severity of faults.
+The health labels are typically acquired by diagnostic methods which are often performed during corrective or preventive maintenance actions \cite{Dua:2019}.
+In machinery, a common diagnostic method is disassembling and inspection \cite{lei2018machinery} as for example shown in the Figure \ref{fig:data_sensor_wavelet} which shows a fault revealed in a gearbox.
+The health labels might be acquired also via non intrusive methods such as X-ray imaging as shown in Figure \ref{fig:data_degradation_cfrp}.
+
+\subsection{Health Index and Failure Threshold}
+
+\begin{figure}
+    \includegraphics[width=\textwidth,keepaspectratio]{%
+        data_degradation_flank_wear.png}
+	\centering
+	\caption{Degradation index (flank wear) of a milling machines through time. The flank
+	         wear was measured with a microscope \cite{data_set_milling}.}
+	\label{fig:data_degradation_flank_wear}
+\end{figure}
+
+Health index, also called as a health indicator or a degradation level \cite{lei2018machinery}, represents a health state of a subject as a continuous variable.
+Examples of Health index are crack size, tool wear, capacity of a battery or root mean square value of vibration data.
+The root mean square value of vibration data is a good example of health index that is relatively easy to obtain via non-intrusive method --- an accelerometer is used for measuring vibrations.
+However, intrusive methods must be sometimes used to measure the health index --- Figure \ref{fig:data_degradation_flank_wear} shows development of a flank wear of milling machines which was measured by disassembling the milling machine and measuring the size of  the wear with a use of a microscope.
+
+A subject may be considered as failed when its health index reaches a so called failure threshold.
+The value of the failure threshold and can be obtained via various ways:
+\begin{itemize}
+    \item by domain requirements, e.g. a minimal needed capacity of battery         
+          \cite{data_set_battery};
+    \item by ISO norms --- e.g. ISO standard 10816-3 defines permissible velocity vibration
+          levels for machines that may be used as a failure threshold
+          \cite{klausen2018novel, iso_mechanical};
+    \item by inferring from historical data containing failures of subjects         
+          \cite{chen2017statistical, wei2013multi}.
+\end{itemize}
+
+\section{Approaches to Predictive Maintenance}
+\label{sec:pdm_approaches}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        approaches_intro_health_stages.png}
+    \caption{Illustration of different operational profiles of subjects \cite{lei2018machinery}.}
+    \label{fig:approaches_intro_health_stages}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        pdm_model_concept.pdf}
+    \caption{Different \gls{pdm} modeling approaches from our point of view.}
+    \label{fig:pdm_model_concept}
+\end{figure}
+
+The goal of \acrshort{pdm} is to monitor and analyze the condition of a subject in order to plan maintenance action when a fault is present or when a failure is likely to occur soon.
+In the previous section, we described the condition monitoring, i.e. the process of collecting the data that can reveal the health state of a subject.
+In this section we provide an introduction to approaches how to use the condition monitoring data to build a \acrshort{pdm} model --- a model that is capable of analyzing the condition and predicting a health state of the subject.
+
+There exist multiple typical operational profiles that might precede a failure.
+The common operational profiles (illustrated in Figure \ref{fig:approaches_intro_health_stages}) include \cite{lei2018machinery}:
+\begin{itemize}
+    \item a continuous degradation -- the subjects continuously degrades over the whole time of its operation;
+    \item two-stage profile --- a subject is healthy and operates under stable conditions until a fault occurs which starts the degradation process and potentially ends with a failure;
+    \item multi-stage profile --- similar as two-stage but the unhealthy stage can be divided into multiple stages.
+\end{itemize}
+Moreover, there can be available only limited data about the failures or faults --- e.g. there can be only information when the subject failed, only information about the subject being faulty at some specific time point \cite{westernbearing, data_set_aps_scania} or there might be even no health labels available at all or of insufficient quality \cite{yuan2019}.
+The existence of the different operational profiles and of the different types of available data gives rise to multiple approaches to \acrshort{pdm}.
+
+% TODO: In literature, there is no clear constent
+We identified three main approaches (illustrated in Figure \ref{fig:pdm_model_concept}):
+\begin{itemize}
+    \item fault detection --- detecting whether a fault (or some kind of anomaly) is present, i.e. detecting whether a subject is malfunctioning;
+    \item failure prediction --- identifying whether a failure will happen in near future;
+    \item \gls{rul} prediction --- predicting the exact amount of time that is left until a failure occurs.
+\end{itemize}
+The approaches differ in what operational profiles they are suitable for, e.g. in case of a continuous degradation there is no point in detecting fault but rather \gls{rul} should be predicted, and also in what data are required (e.g. a failure prediction model can be built only when there are available data about failures).
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.7\textwidth, keepaspectratio]{%
+        approaches_another_view.png}
+    \caption{Modules in \gls{pdm} according to \cite{wesley2008current}.}
+    \label{fig:approaches_another_view}
+\end{figure}
+
+Aside the three main approaches we can see also one specific approach: fault (or failure) diagnosis --- identifying which specific type of fault is present (or which specific failure will happen) if more than one type can occur.
+In some literature the diagnosis is considered as part of a \gls{pdm} modeling process, where the whole process consist of detecting a fault, diagnosing the exact type of the fault and making prognosis about remaining useful life \cite{wesley2008current} (illustrated in Figure \ref{fig:approaches_another_view}).
+However, from the \gls{ml} perspective, we consider diagnosis as a task independent of fault detection, failure prediction or remaining useful life.
+That is because if there exist several fault/failure a separate model can be built for each of them \cite{widodo2007support}.
+Therefore, we consider fault diagnosis as an extension of the approaches we describe here and we consider it as out of scope of this thesis.
+
+In the next chapter, we describe the three main approaches mentioned above in detail.

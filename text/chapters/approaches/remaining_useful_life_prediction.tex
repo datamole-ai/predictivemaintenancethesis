@@ -1,0 +1,356 @@
+\section{Remaining Useful Life Prediction}
+\label{sec:approaches_prognostics}
+
+\Acrfull{rul} prediction is a \gls{pdm} approach where the goal is to predict the time left until the subject is still able to perform its intended function, i.e. until a failure occurs.
+This section is structured as follows.
+In Section \ref{sec:approaches_rul_motivation} we give a motivation why and when to predict \acrshort{rul} instead of using fault detection or failure prediction approaches.
+In Section \ref{sec:approaches_rul_approaches} we describe and compare two different modeling approaches to \acrshort{rul} prediction --- \acrshort{hi}-based \acrshort{rul} prediction and direct \acrshort{rul} prediction.
+The two approaches fundamentally differ in how \acrshort{rul} is predicted.
+However, they still provide the same output --- the \acrshort{rul} of the subject --- and thus can be evaluated the same way.
+Therefore, in the Section \ref{sec:approaches_rul_evaluation} we describe how to evaluate the \acrshort{rul} prediction independently on the chosen modeling approach.
+
+\subsection{Motivation}
+\label{sec:approaches_rul_motivation}
+
+An accurate long term \acrshort{rul} prediction can significantly help in scheduling the maintenance actions in comparison with fault detection or failure prediction approaches.
+Imagine a situation of having a large amount of subjects which started operating at the same time --- for example a fleet of one hundred wind turbines.
+If the turbines were operating under similar conditions it might happen that they will all tend to fail after similar amount of time of operation --- e.g. after two years.
+Both fault detection and failure prediction approaches would then notify that all the wind turbines are faulty (or are going to fail soon) at a similar time shortly before the failures, let's say one week ahead.
+However it might be impossible to schedule maintenance actions for all the wind turbines at that time point because only two wind turbines can be maintained per day and there is one hundred of wind turbines about to fail in one week.
+With an accurate \acrshort{rul} prediction, on the other hand, one can continuously have information about when each individual subject is going to fail.
+If the \acrshort{rul} is then similar for many subjects the maintenance actions can be scheduled more in advance so that all the subjects are maintained in advance.
+However, an accurate \acrshort{rul} prediction is typically possible only in certain domains and only when having the right type of data.
+
+\Acrshort{rul} prediction is typically done on subjects which have an ongoing continuous degradation that can be well quantified --- for example a turbine bearing deterioration.
+The failure then can be either a complete inability of the subject to operate (e.g. the wind turbine shuts down) or it can be a state when the subject is no longer capable of safe operation or of operation at enough quality --- e.g. a maximum capacity of a battery reaches 40 \% of the designed capacity\footnote{In such cases the failure is often rather called an end of life (EoL). However, as it principally represents the same thing we will stick to the naming convention of failure.}.
+In such cases it is common to predict \acrshort{rul} during the whole lifetime of the subject (e.g. every day or week) \cite{miao2013remaining}.
+In other cases, however, the subject might operate under stable, healthy, conditions without any sings of wear until a fault occurs which triggers the degradation process --- the fault grows in severity (as illustrated in the beginning of this chapter in Figure \ref{fig:approaches_intro_health_stages}).
+In such cases the \acrshort{rul} can be predicted over the whole lifetime as well but it might happen that the prediction would be highly inaccurate until the fault occurs.
+Therefore, the \acrshort{rul} prediction can 
+start after the fault (or anomaly) is detected\footnote{assuming the fault is detected early enough so that the \acrshort{rul} prediction is useful} \cite{lei2018machinery} and thus providing an estimation of the fault's severity.
+
+\subsection{Approaches}
+\label{sec:approaches_rul_approaches}
+
+We identified two different modeling approaches to \acrshort{rul} prediction --- direct RUL prediction and HI-based RUL prediction\footnote{HI --- health indicator}.
+In this section we describe and compare the two approaches.
+
+% Before we proceed to their description, however, we want to shortly comment on the naming of the approaches.
+% There is very few literature that mentions the existence of the both approaches.
+% Typically only one of the approaches is used (or described) and it is simply referred to both of them as \acrshort{rul} prediction \cite{miao2013remaining, hu2012ensemble, klausen2018novel,  yang2016health}.
+% The first approach, the \acrshort{hi}-based \acrshort{rul} prediction, can be considered as a classical approach to \acrshort{rul} prediction as there is much more literature using this approach and 
+
+% The first approach consists in construction of a \acrfull{hi} from the condition monitoring data, forecasting its future values and predicting when the \acrshort{hi} crosses a predefined failure threshold.
+% In this approach it is common that a separate model is build for every subject and the model is updated with each new health indicator value \cite{lei2018machinery}.
+% The second approach consists in direct prediction of the \acrshort{rul} from the condition monitoring data using a regression model.
+% The regression model is trained on historical run-to-failure data of subjects from which their \acrshort{rul} is calculated.
+% Unfortunately, 
+% % The first approach, utilizing the \acrshort{hi}, is sometimes referred to as prognostics  \cite{lei2018machinery, lee2014prognostics} but the definition of prognostics is that it is a \acrshort{rul} prediction \cite{lei2018machinery}.
+% % The second approach is sometimes referred to as regression approach to \acrshort{rul} prediction \cite{babu2016deep} but as will be described later in this section even the first approach can utilize regression models.
+% The only work we found that tries to distinguish between the approaches \cite{jia2018review} calls them "Unsupervised Prognosis" and "Supervised RUL Prediction".
+% However, that is highly ambiguous naming as first approach can utilize supervised learning algorithms as well and as the prognosis and \acrshort{rul} prediction are equivalent.
+% Therefore, we decide to call the two approaches an \acrshort{hi}-based \acrshort{rul} prediction and a direct \acrshort{rul} prediction.
+% We describe and compare both of the approaches in more detail in Section  \ref{sec:approaches_rul_approaches}.
+
+\subsubsection{Direct \acrshort{rul} Prediction}
+\label{sec:approaches_rul_direct}
+
+\begin{table}
+	\centering
+	\begin{tabular}{|c|c|ccc|c|c|c|}
+    \hline
+    subject id
+    & time
+    & \multicolumn{3}{|p{3cm}|}{\centering features}
+    & failure
+    & \textbf{RUL}\\
+    \hline
+    subject A & 2020-01-01 &          0.1 & $\cdots$ &  34.1 & 0 & 127\\
+	subject A & 2020-01-02 &          0.3 & $\cdots$ &  34.2 & 0 & 126\\
+    $\vdots$ & $\vdots$ & $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$ & $\vdots$\\
+    subject A & 2020-05-05 &          1.1 & $\cdots$ &  37.5 & 0 & 2\\
+    subject A & 2020-05-06 &          1.1 & $\cdots$ &  37.5 & 0 & 1\\
+    subject A & 2020-05-07 &          1.2 & $\cdots$ &  37.9 & 1 & 0\\
+    \hdashline
+    subject B & 2020-01-01 &          0.2 & $\cdots$ &  33.1 & 0 & 89\\
+    subject B & 2020-01-02 &          0.3 & $\cdots$ &  33.5 & 0 & 88\\
+    $\vdots$ & $\vdots$ & $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$ & $\vdots$\\
+    subject B & 2020-03-29 &          2.5 & $\cdots$ &  35.9 & 0 & 1\\
+    subject B & 2020-03-30 &          2.2 & $\cdots$ &  36.1 & 1 & 0\\
+    \hline
+	\end{tabular}
+    \caption{Example of calculating the \acrshort{rul} values from the run-to-failure data.}
+    \label{tab:pdm_data_run_to_failure}
+\end{table}
+
+Direct \acrshort{rul} prediction is suitable when there are available run-to-failure data for at least several subjects.
+The approach consists in training a regression model on the run-to-failure data where the regressands (features) can be any known data about the subject at the time of the prediction and the regressor (the predicted value) is the \acrshort{rul} retrospectively calculated from the run-to-failure data.
+The calculation of the RUL is typically done as follows --- at the time of the failure, $T$, the RUL is equal to 0, at time $T-1$ the RUL is equal to 1, at $T-2$ the RUL is equal to 2 and so on.
+Table \ref{tab:pdm_data_run_to_failure} shows an example of run-to-failure data set and calculating of the RUL.
+
+As described in the previous section, the subjects might operate under stable and healthy conditions until a fault occurs which triggers the degradation process.
+In that case the RUL prediction might be very inaccurate at the early stage of the subject's operation where it might be hard to distinguish between e.g. RUL of 200 days and 170 days.
+Therefore in some works limiting of the \acrshort{rul} values with an upper bound is suggested \cite{jayasinghe2018temporal} --- e.g. all the RUL values above 130 are set to 130  see Figure \ref{fig:approaches_rul_clipping} for illustration).
+The authors in \cite{jayasinghe2018temporal} conclude that such clipping might result in better performance in terms of root mean squared error metric.
+However, as will be discussed in Section \ref{sec:approaches_rul_evaluation} the RMSE metric might be unsuitable for evaluation of RUL prediction performance and thus it is questionable whether this RUL clipping helps the overall performance of the model.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.6\textwidth, keepaspectratio]{%
+        approaches_rul_clipping.png}
+    \caption{Illustration of limiting RUL with an upper bound \cite{jayasinghe2018temporal}.}
+    \label{fig:approaches_rul_clipping}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.6\textwidth, keepaspectratio]{%
+        approaches_rul_bayesian.png}
+    \caption{Illustration of RUL prediction with a Bayesian LSTM neural network  \cite{louw2018remaining}.}
+    \label{fig:approaches_rul_bayesian}
+\end{figure}
+
+Promising results of direct RUL prediction have been achieved with recurrent and convolutional neural networks in various domains such as wind turbines or bearings \cite{mahamad2010predicting, babu2016deep}.
+In recent years, Bayesian neural networks are gaining on interest in direct RUL prediction as they can predict a \gls{pdf} instead of single value predictions \cite{peng2019bayesian, louw2018remaining}.
+The mean of the \gls{pdf} can then be used as the predicted RUL and a confidence interval can be calculated and used as a form of uncertainty --- which might be very valuable for the end users as a supportive information about the prediction.
+Figure \ref{fig:approaches_rul_bayesian} illustrates prediction of \gls{rul} with a Bayesian LSTM neural network.
+
+In some literature, the direct \acrshort{rul} prediction approach is considered as having relatively low capability of predicting the \acrshort{rul} since a linear relationship between the \acrshort{rul} and the condition monitoring data is established \cite{jia2018review}.
+% However, we must emphasize that the linear relationship holds only when using raw data and a linear model.
+% When a more complex model such as SVM with higher degree polynomial kernel or an artificial neural network is used or when some feature engineering is performed (e.g. squared age of the subject is used as a feature), the mentioned linear relationship no longer holds.
+
+\subsubsection{\acrshort{hi}-based \acrshort{rul} Prediction}
+\label{sec:approaches_rul_hi_based}
+
+The \acrshort{hi}-based \acrshort{rul} prediction approach is suitable in cases when there is available a \acrfull{hi} that directly represents the subject's health state and a predefined failure threshold.
+The failure of the subject is then considered as the time point when the \acrshort{hi} crosses the failure threshold.
+A typical example of such case are batteries where the health indicator can be their current maximal capacity and the failure threshold can be a ratio of the designed maximal capacity (e.g. 30 \%).
+% Another example are bearings where the health indicator can be root mean square of vibration data and the failure threshold can be some maximal permissible vibration level --- e.g. ISO norm \cite{iso_mechanical} even defines permissible thresholds for some bearings.
+The \acrshort{rul} prediction then consists in building a model that forecasts future values of the \acrshort{hi} and in identifying the time point when the HI crosses the failure threshold.
+The RUL is then calculated as the time difference between the identified time point of the crossing and the current time point.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        approaches_rul_prognostics_example.png}
+    \caption{Illustration of \acrshort{hi}-based \acrshort{rul} prediction.
+             The red dashed line represents a failure threshold (FT), the blue line
+             represents a health indicator up to a current time point (green dot), the green
+             line shows a prediction of the health indicator in the future and
+             the red line represents the actual future values of the health indicator.
+             \cite{lei2018machinery}.}
+    \label{fig:approaches_rul_prognostics_example}
+\end{figure}
+
+The forecasted \acrshort{hi} is commonly in a form of a \acrfull{pdf} which tends to have higher variance the farther to the future the \acrshort{hi} is predicted \cite{saxena2010metrics}.
+In case of predicting the \gls{pdf} of the HI the failure can be defined as the time point when the mean of the \acrshort{pdf} crosses the failure threshold.
+Figure \ref{fig:approaches_rul_prognostics_example} illustrates the forecasting of the \acrshort{hi} with a \acrshort{pdf}.
+
+The HI forecasting techniques can be divided into two categories:
+\begin{itemize}
+    \item model-based techniques;
+    \item machine learning techniques;
+\end{itemize}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.7\textwidth, keepaspectratio]{%
+        intro_pdm_battery_degradation.jpg}
+    \caption{Finding an empirical model for degradation of battery capacity 
+             \cite{miao2013remaining}.}
+    \label{fig:approaches_rul_battery}
+\end{figure}
+
+\paragraph{Model-based Techniques}
+The model-based techniques are based on the existence of an underlying physical or statistical model that describes the degradation process of the subject.
+Such physical or statistical models can be either apriori known or empirically observed from the available data.
+For example the capacity of the batteries can be commonly fitted by an exponential model \cite{he2011prognostics} --- see Figure \ref{fig:approaches_rul_battery} for illustration.
+The physical and statistical models have typically parameters which are estimated from the currently available HI data of the subject (the parameters are estimated for each subject separately).
+In other words the forecasting at time point $t$ is done by a model with parameters estimated based on the HI data up to time point $t$.
+
+\paragraph{ML Techniques}
+The AI techniques, on the other hand, do not require any domain knowledge about the degradation process but rather build a model that learns the degradation patterns from the previous HI data points by itself.
+A simple technique can be using a regression model that takes time as the regressand and the HI as the regressor \cite{yoo2018novel}.
+More advanced techniques include for example a recurrent neural networks which can be trained to time series prediction, i.e. output future values of the HI based on previous values \cite{zhang2018long}.
+
+% TODO: Uber extreme forecasting
+
+A big benefit of HI-based RUL prediction over the direct RUL prediction is that there is no need for run-to-failure data.
+The unavailability of run-to-failure data is common in many domains such as aviation where the subjects simply cannot operate until a failure mostly from safety reasons \cite{saxena2010metrics}.
+On the other hand, the downside of the HI-based RUL prediction is that there has to be a well defined health indicator and failure threshold.
+
+\subsection{Evaluation}
+\label{sec:approaches_rul_evaluation}
+
+In this section, we describe how to evaluate the performance of a RUL prediction model.
+We will use the following notation:
+\begin{itemize}
+    \item $N$ --- number of subjects;
+    \item $n \in [1, N]$ --- index of a n-th subject;
+    \item $t \in [1, T_n]$ --- time index of n-th subject's observations, where $t=1$ is the first observation and $t=T_n$ is the time stamp of the failure;
+    \item $\text{RUL}_n(t)$ --- actual \gls{rul} of n-th subject at time $t$;
+    \item $\widehat{\text{RUL}}_n(t)$ --- predicted \gls{rul} of n-th subject at time $t$;
+    \item $W$ --- warning time;
+    \item $\text{EoUP}_n = T_n-W$ --- \acrfull{eoup}, the last time stamp of useful predictions, i.e. not yet in the warning window.
+\end{itemize}
+The warning time has the same meaning as in failure prediction --- some lead time before the failure of the subject might be necessary so that the maintenance action can be scheduled and performed.
+Therefore, we will exclude the time points between $T-W$ and $T$ from the evaluation.
+
+% The performance of \acrshort{rul} prediction can be evaluated on four levels:
+% \begin{enumerate}
+    
+%     \item single prediction level --- what is the error of the prediction from the actual RUL?
+    
+%     \item \acrshort{rul} level --- what is a typical error of predicting a specific actual \acrshort{rul} value? (e.g. how accurate are the predictions when actual RUL value is 100 days vs 10 days);
+%     % \item relative \acrshort{rul} level --- what is a typical error of the model when
+%     %       predicting a specific actual \acrshort{rul} value (e.g. a mean error
+%     %       of predictions for the actual \acrshort{rul} of 100 days is 10 days);
+    
+%     \item subject level --- how accurate is the model in predicting \acrshort{rul} of a specific subject?;
+    
+%     \item data set level --- what is the overall performance of the predictions on the whole data set, e.g. on a fleet of subjects?;
+
+% \end{enumerate}
+% Below we will describe various evaluation metrics and techniques and we will describe how they can be used for evaluation at the different levels mentioned above.
+
+% The \acrshort{rul} predictions are made for every subject while the predicted values 
+% Each prediction is made for a specific time stamp of a specific subject.
+
+\subsubsection{Classical Metrics}
+
+\Acrshort{rul} prediction is in context of \acrshort{ml} a regression task --- the goal is to predict a continuous variable.
+Thus, classical regression metrics such as MAE, RMSE or MAPE can be used.
+However, it is not straightforward how to use them from two reasons.
+First, we should omit the predictions made in the warning window, the predictions after \acrshort{eoup}.
+Second, we can calculate the mean error either over subjects or over individual samples.
+
+An absolute error, squared error and absolute percentage error for n-th subject can be calculated as:
+\begin{align*}
+    \text{AbsoluteError}_n &= \sum_{t=1}^{\text{EoUP}_n}\left|\text{RUL}_n(t) - \widehat{\text{RUL}}_n(t)\right|,\\
+    \text{SquaredError}_n &= \sum_{t=1}^{\text{EoUP}_n}{(\text{RUL}_n(t) - \widehat{\text{RUL}}_n(t))^2},\\
+    \text{AbsolutePercentageError}_n &= \sum_{t=1}^{\text{EoUP}_n}\left|\frac{\text{RUL}_n(t) - \widehat{\text{RUL}}_n(t)}{\text{RUL}_n(t)}\right|.\\
+\end{align*}
+In general, we will denote the error of the n-th subject as Error$_n$.
+The mean of the errors can be then calculated either over subjects or over samples:
+\begin{align*}
+    \text{mean error over subjects} &= \frac{1}{N}\sum_{n=1}^{N}\frac{\text{Error}_n}{\text{EoUP}_n},\\
+    \text{mean error over samples} &= \frac{1}{\sum_{n=1}^N{{\text{EoUP}_n}}}\sum_{n=1}^{N}{\text{Error}_n}.\\
+\end{align*}
+
+Mean absolute percentage error (MAPE) over samples can be then calculated as:
+\begin{align*}
+    \text{MAPE} = \frac{1}{\sum_{n=1}^N{{\text{EoUP}_n}}}\sum_{n=1}^{N}{\sum_{t=1}^{\text{EoUP}_n}\left|\frac{\text{RUL}_n(t) - \widehat{\text{RUL}}_n(t)}{\text{RUL}_n(t)}\right|}
+\end{align*}
+The metrics such as MAE and RMSE are then calculated analogically.
+
+% Typically, the lower the actual \acrshort{rul} is the more accurate the predictions should be --- e.g. it is much less severe error if the actual \acrshort{rul} is 200 days and the prediction is 220 days in comparison with an actual \acrshort{rul} being 5 days and the prediction being 25 days.
+% This exactly reflects MAPE metric which scales the errors accordingly to the actual predicted value.
+
+\subsubsection{Prognostic Horizon}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        approaches_rul_evaluation_prognostic_horizon.pdf}
+    \caption{Illustration of prognostic horizon.}
+    \label{fig:approaches_rul_evaluation_prognostic_horizon}
+\end{figure}
+
+Prognostic horizon is an evaluation metric specifically tailored for \acrshort{rul} prediction proposed by Saxena et al. \cite{saxena2010metrics}.
+It aims to answer the following question: What time ahead of the failure are the predictions within a prespecified bound around the actual \acrshort{rul} for one specific subject?
+The prognostic horizon is defined as the time difference between the time of failure ($T_n$) and the first time index from which all the future predictions are within the boundaries specified by parameter $\alpha$.
+For the n-th subject the prognostic horizon (PH) with parameter $\alpha$ is defined as:
+\begin{align*}
+    \text{PH}_{\alpha, n} &= T - \min\left\{i|
+        \forall t, t \geq i : \widehat{\text{RUL}}_n(t) \in [\text{RUL}_n(t) - \alpha, \text{RUL}_n(t) + \alpha]
+  \right\}.
+\end{align*}
+Figure \ref{fig:approaches_rul_evaluation_prognostic_horizon} illustrates the calculation of prognostic horizon on predictions for one subject.
+
+For evaluation of multiple subjects, \acrfull{mph}$_\alpha$ can be used as:
+\begin{align*}
+    \text{MPH}_\alpha = \frac{1}{N}\sum_{n}{\text{PH}_{\alpha, n}}
+\end{align*}
+
+\subsubsection{Metrics Relative to RUL}
+
+% All the above mentioned metrics produce a single score.
+% Therefore, when we obtain e.g. a score RMSE equal to 20, we do not know whether there were high errors at the beginning a
+
+It might happen that the RUL prediction model has relatively high errors at high RUL values compared to the errors at low RUL values.
+Therefore, we can calculate the errors only for RUL values lower than a certain fixed value, for example calculate MAPE only for RUL values lesser than 40.
+We define a mean absolute percentage error up to RUL values equal to $k$ (MAPE@k) as:
+\begin{align*}
+    \text{MAPE@k} = \frac{1}{\sum_{n=1}^N{{\left(\text{EoUP}_n - k - 1 \right)}}}\sum_{n=1}^{N}{\sum_{t=k}^{\text{EoUP}_n}\left|\frac{\text{RUL}_n(t) - \widehat{\text{RUL}}_n(t)}{\text{RUL}_n(t)}\right|}
+\end{align*}
+Metrics such as MAE@k, RMSE@k can be then defined analogically.
+
+In RUL prediction, we might be interested in how the model performs at relatively to the actual RUL values, i.e. we might want to obtain one score for every actual RUL value.
+Therefore, instead of calculating a mean score over all the samples, we can calculate a mean score over all subjects at a various RUL values.
+MAPE at different RUL values is defined as follows:
+\begin{align*}
+    \text{MAPE(RUL)} = \sum_n \frac{\text{RUL} - \widehat{\text{RUL}}_n(T_n - \text{RUL})}{\text{RUL}}.
+\end{align*}
+The metrics MAE, RMSE and others can be then defined analogically.
+
+% TODO
+% TODO
+
+% Saxena et al. proposed a metric called relative accuracy \cite{saxena2010metrics} which measures the accuracy of the \acrshort{rul} prediction at a relative \acrshort{rul} value:
+% \begin{align*}
+%     \text{RelativeAccuracy}_\lambda = 1 - \frac{|y_{\lambda T} - \hat{y}_t|}{y_t}
+% \end{align*}
+% where $t_\lambda = \lambda T, \lambda \in [0, 1]$
+
+% \begin{figure}
+%     \centering
+%     \includegraphics[width=\textwidth, keepaspectratio]{%
+%         approaches_prognostics_relative_accuracy.pdf}
+%     \caption{Relative accuracy}
+%     \label{fig:approaches_prognostics_relative_accuracy}
+% \end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        approaches_rul_prediction_optimistic.pdf}
+    \caption{Illustration of optimistic and pessimistic predictions.}
+    \label{fig:approaches_rul_prediction_optimistic}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\textwidth, keepaspectratio]{%
+        approaches_rul_asymmetric_scoring.png}
+    \caption{Asymmetric weighting function for late and early predictions \cite{saxena2008damage}.}
+    \label{fig:approaches_rul_asymmetric_scoring}
+\end{figure}
+
+\subsubsection{Asymmetric Weighting}
+
+When the prediction is not perfect, i.e. $\text{RUL} \neq \widehat{\text{RUL}}$, it can be either late (optimistic) if $\text{RUL} > \widehat{\text{RUL}}$ or early (pessimistic) if $\text{RUL} < \widehat{\text{RUL}}$.
+Figure \ref{fig:approaches_rul_prediction_optimistic} illustrates RUL predictions for one subject and highlights what predictions are late and which are early.
+The late predictions might bring a risk that the subject fails before the maintenance is performed.
+Therefore, the early predictions are typically better since the subject is in the worst case maintained earlier than it would have to be.
+
+In \cite{nectoux2012pronostia} and \cite{saxena2008damage} the authors suggest using an asymmetric weighting function for weighting the prediction errors.
+The main idea is to give higher weight to the late predictions in comparison with the early ones.
+The asymmetric weighting function $\varphi$ can be for example defined as
+\begin{align*}
+    \varphi(d) &= \begin{cases}
+            -d &\text{ if } d < 0\\
+            2d &\text{ if } d \geq 0
+    \end{cases}
+\end{align*}
+where $d$ is the difference between the predicted RUL and actual RUL, i.e. $d = \widehat{\text{RUL}} - \text{RUL}$.
+Figure \ref{fig:approaches_rul_asymmetric_scoring} illustrates the above defined asymmetric weighting function.
+
+The weighting function $\varphi$ can be then used in the classical regression metrics.
+We define a mean asymmetrically weighted percentage error (MAWPE) with an asymmetric scoring function $\varphi$ as:
+\begin{align*}
+    \text{MAWPE}_\varphi &= \frac{1}{\sum_{n=1}^N{{\text{EoUP}_n}}}\sum_{n=1}^{N}{\sum_{t=1}^{\text{EoUP}_n}\left|\varphi\left(\frac{\text{RUL}_n(t) - \widehat{\text{RUL}}_n(t)}{\text{RUL}_n(t)}\right)\right|} \\
+\end{align*}
+The usage of the asymmetric weighting function in other metrics is then analogical.
+
+The asymmetry can be also applied in prognostic horizon where instead of a single parameter $\alpha$ (defining the width of the bound) two parameters $\alpha^+$ and $\alpha^-$ can be used which define the lower and the upper boundary, respectively.

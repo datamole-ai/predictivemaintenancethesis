@@ -1,0 +1,70 @@
+\chapter{Experiments}
+\label{chapter:experiments}
+
+In this chapter we describe experiments conducted on real-world publicly available \gls{pdm} data sets.
+There are two main goals of the experiments:
+\begin{itemize}
+    \item demonstrate the approaches to \gls{pdm} utilizing \gls{ml} techniques;
+    \item compare the different evaluation metrics that can be used within each approach.
+\end{itemize}
+For each of the approaches we conduct one experiment --- totaling in three experiments.
+
+Though there is not enough publicly available data sets to make a robust comparison of the metrics, we can conduct each experiment on one carefully selected data set, suitable for the given approach, and compare the metrics from two aspects:
+\begin{itemize}
+    \item model selection --- Do evaluation metrics differ in how they rank different models for the task related to the data set?
+    \item interpretability and practical value --- How can the evaluation metrics be interpreted by a domain expert? Does the evaluation bring practical value for the task related to the data set? For example do the metrics clearly express what the probability of predicting a failure or detecting a fault is?
+\end{itemize}
+
+As the approaches and the evaluation metrics are different, every experiment has slightly different experiment design.
+The general design of the experiments can be, however, summarized as follows:
+\begin{enumerate}
+    \item candidate models selection --- use multiple evaluation metrics to select a set of candidate models from a larger amount of built models, e.g. select best ranked model by every metric, and discuss how the models agree in models' ranking;
+    \item candidate models comparison --- compare the candidate models, e.g. using PR analysis, and discuss which model might be the most suitable model for the given task;
+    \item performance interpretability --- discuss what will the model's performance in practice be.
+\end{enumerate}
+
+This chapter is organized as follows.
+In Section \ref{sec:experiments_implementation} we describe implementation of the experiments including chosen technologies and the experiments' reproducibility.
+In Sections \ref{sec:experiments_fault_detection}, \ref{sec:experiments_failure_prediction} and \ref{sec:experiments_rul} we describe the three conducted experiments, respectively.
+Each experiment consists of sections:
+\begin{itemize}
+    \item data set description,
+    \item task definition,
+    \item design of experiment,
+    \item results and
+    \item discussion.
+\end{itemize}
+
+\input{chapters/experiments/implementation}
+\input{chapters/experiments/fault_detection_aps_scania}
+\input{chapters/experiments/failure_prediction_azure}
+\input{chapters/experiments/remaining_useful_life_prediction_turbofan}
+
+% \section{Summary}
+% \label{sec:experiments_discussion}
+
+% In our experiments, we demonstrated fault detection, failure prediction and remaining useful life prediction approaches on real-world data sets and we compared their evaluation metrics.
+
+% \paragraph{Fault Detection}
+% We demonstrated fault detection on a data set containing point-based faults in Scania trucks and a predefined cost function that assigned costs to FPs and FNs.
+% For model selection, we used accuracy, F1 score, AUPRG and AUROC metrics.
+% The results suggest that a fault detection model should be selected by either AUROC or AUPRG scores while it does not matter which of the two is used as they rank the models same.
+% Moreover, we demonstrated how the predefined cost function for FPs and FNs helps in selecting the optimal decision threshold.
+% However, we expressed doubts whether the assessed final precision and recall scores actually reflect how the model will actually perform in practice as there was no time information taken into account such as how often are the trucks inspected (the faults are only point-based).
+% Therefore, we can conclude that the fault detection using data with point-based is easy to model and it is easy to assess its performance.
+
+% %TODO
+
+% The failure prediction approach, on the other hand, may provide much more realistic evaluation of the real-world model's performance
+% The more realistic evaluation can be done using event-based precision and recall metrics as the existence of a true prediction in the monitoring window is taken into account.
+% On the other hand, it might be challenging to select the best performing model from a large amount of trained models.
+% Calculating the area under event-based precision recall curve can be computationally more expensive than training the model itself and using event-based F1 score, which uses predictions at fixed decision threshold, can lead to selecting a model that overly smooths the predictions.
+% Using a classical F1 score and classical AUPRG (area under precision-recall-gain curve) then leads to very inconsistent ranking of the models.
+% Therefore, we consider as a possible solution to pre-select multiple candidate models (possibly based on different metrics) and select the final model using the event-based precision recall curves (thus using the same procedure as we did in the experiment).
+
+% In the last experiment we demonstrated remaining useful life prediction of turbofan engines.
+% We demonstrated that RMSE might be unsuitable metric for comparison of RUL prediction models as it might select models that have high percentage error (MAPE).
+% Moreover, we demonstrated that the model selection should not be done using a single score (such as RMSE or MAPE values) but the errors should be rather visualized over RUL values.
+% Using this visualization we discovered that the model that had very low percentage errors at low RUL values had very high variance of predictions which might cause the model being untrustable in practice.
+% Therefore, we conclude that a RUL prediction models shouldn't be evaluated using a single score.
+% Similarly as in case of failure prediction, selecting a set of candidate models, preferably using different evaluation metrics, visually inspecting their performance and select the final model with consultation with a domain expert might be the best solution.

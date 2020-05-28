@@ -1,0 +1,231 @@
+\section{Experiment --- RUL Prediction of Turbofan Engines}
+\label{sec:experiments_rul}
+
+This section describes an experiment where we demonstrate \gls{rul} prediction approach and we compare its evaluation metrics.
+\Gls{rul} prediction is a \gls{pdm} approach where the goal is to predict the exact time that remains until a failure occurs --- the \acrfull{rul}.
+This approach is suitable in cases when there is a continuous degradation process of the subject.
+
+There exist two main approaches to \gls{rul} prediction: direct RUL prediction and HI-based RUL prediction.
+The first approach, the direct \gls{rul} prediction, consists in training a regression model to predict \gls{rul} values retrospectively calculated from run-to-failure data.
+The second approach, HI-based RUL prediction, consists in building a time series prediction model that predicts when a \acrfull{hi} of the subject crosses a predefined failure threshold.
+The two approaches differ in what data are required for the model to be build (the necessity of run-to-failure data versus the necessity of a single HI and failure threshold) and in what models they use (classical regression vs time series prediction).
+In this experiment we choose to demonstrate the direct RUL prediction approach. 
+
+For the purpose of our experiment we choose a data set containing run-to-failure data of turbofan engines \cite{data_set_turbofan} which has already been used in many works regarding RUL prediction \cite{mosallam2016data, ellefsen2019remaining, babu2016deep, peng2019bayesian} and is thus well known in the community of predictive maintenance and related fields.
+In contrast with the existing works, where the best performing model is selected based on one specific metric, most commonly RMSE, we evaluate the built models using multiple metrics and we analyze how do the models selected by various metrics differ.
+
+\subsection{Data Set Description}
+\label{sec:experiment_rul_data}
+
+\begin{figure}
+    \includegraphics[width=\textwidth,keepaspectratio]{%
+        experiments_rul_sensor_values.pdf}
+	\centering
+	\caption{RUL prediction of turbofan engines: Sensor data for one engine. The failure of the engines occurred after the last operation cycle. We can see that a fault has developed somewhere between 50th and 100th cycle and it grows in magnitude until a failure.}
+	\label{fig:turbofan_sensors}
+\end{figure}
+
+The data set used in this experiment is turbofan engine degradation data set that contains run-to-failure data of hundreds of turbofan engines of the same fleet.
+The data of each engine consist of multivariate time series containing measurements from 26 sensors and 3 operational settings.
+The time axis is the current number of an engine's operation cycle.
+
+Each engine starts with different degree of initial wear and manufacturing variation which is unknown.
+This wear and variation is considered normal, i.e. it is not considered a fault condition.
+A fault develops at some point during the engine's operation and grows in magnitude until a failure occurs.
+The end of each time series thus marks the engine's failure.
+The average length of an engine's operation is approximately 200 cycles.
+Figure \ref{fig:turbofan_sensors} shows an example of data of one engine.
+
+Four different training data sets are provided with different operating conditions and different failure modes.
+Each training data set consists of the multivariate time series (as described above) for hundreds of engines.
+There are four testing sets corresponding to the four training sets, respectively.
+Each testing set consists of two files.
+The first contains data from tens of engines in the same format as the training data but the data are randomly trimmed from the right side, i.e. the end of the time series does not mark the engines failure.
+The second file contains one RUL value for each of the engine in the first file corresponding to the length of the data trimmed from the right, i.e. the RUL at the end of each time series.
+
+The data are provided as CSV files with the time series being in the long format, i.e. each row represents data for one operational cycle of one engine.
+
+\paragraph{Target variable}
+The data are run-to-failure with last record being the last measurement before the We failure occurred.
+We thus calculate the RUL retrospectively from the data such as for every subject the last record has RUL 1, second from the last record RUL 2 and so on.
+
+\paragraph{Features}
+As the features we use the sensor measurements, operational settings and current cycle number.
+Seven sensor features and one operational setting feature contain constant values.
+Therefore, we remove these features as they do not bring any information.
+The sensor measurements contain a lot of noise (see Figure \ref{fig:turbofan_sensors} for illustration).
+Therefore we perform smoothing of the sensor values by a rolling mean of size 11 where each sensor value is replaced by the mean value of the past three values (including the current)\footnote{Note, that is is extremely important that the smoothing (or any other kind of rolling operation) must be done by assigning the aggregated value to the most-right element of the window. A centered window for example would use data from the future.}.
+At last, we normalize all the features using the values from the training data set.
+
+
+\begin{figure}[!htb]
+	\centering
+    \includegraphics[width=.7\textwidth,keepaspectratio]{%
+        experiments_rul_design.pdf}
+	\caption{RUL prediction of turbofan engines: Design of experiment.}
+	\label{fig:experiments_rul_design}
+\end{figure}
+
+\subsection{Task Definition}
+\label{sec:experiment_rul_task}
+
+The task defined by the authors of the data set is to build a RUL prediction model using the training set and evaluate it using the testing set --- i.e. to predict one RUL value for each engine in the testing set.
+However, we consider such evaluation as not being appropriate as a RUL prediction model deployed in production will most probably continuously predict RUL values at each operational cycle.
+We think a RUL prediction model should be rather evaluated by RUL predictions from the whole life cycles of the testing subjects rather than by only one randomly selected RUL.
+Therefore, we redefine the task as to:
+\begin{itemize}
+    \item split the original training set (containing the condition monitoring data for each engine's whole life cycle) into new training and testing sets\footnote{splitting should be then made per subject to avoid overfitting};
+    \item use the newly created training set for building the model;
+    \item use the newly created testing set for the model evaluation.
+\end{itemize}
+For the purpose of our experiment we use the first of the four provided training sets that contain data from exactly 100 engines that operate under stable conditions and develop a fault in the high pressure compressor.
+
+Moreover, we set a warning window ($W$) so that the predictions close to the failures are excluded from the evaluation, i.e. all predictions made for actual RUL lesser than $W$ are excluded from evaluation.
+There are two reasons for using the warning window.
+The first is that the predictions of RUL very near to 0 are likely to have high error (e.g. predicted RUL being 2 at actual RUL 1 is equal to error 200 \%).
+The second reason is that predictions such close to the failure are commonly of low value in practice as the maintenance action can for example be already be scheduled when predicted RUL is for example 10 (rather than 1 or 2)\footnote{though this of course depends on the specific use case}.
+As an average life cycle of the engines is about 200 cycles, we set the warning window to 5 cycles (2.25 \% of the average life cycle).
+
+\subsection{Design of Experiment}
+\label{sec:experiment_rul_doe}
+
+The goals of this experiment are to demonstrate \gls{rul} prediction and compare its evaluation metrics.
+Commonly, there is a need for the RUL prediction models to have better performance with RUL reaching zero as the maintenance actions are typically performed when the subject's RUL is low (but not yet in the warning window).
+Therefore, we design the experiment so that the model selection is done in two steps.
+The first step consists in selecting a set of candidate models from a large set of trained models using various evaluation metrics which provide a single score.
+The second step then consists in more an analysis of the candidate models in terms of how they perform relatively to RUL, i.e. whether for example some model predicts RUL accurately most of the time (thus having good overall performance) but has poor predictions near the failure.
+The individual steps of the experiment design (illustrated in Figure \ref{fig:experiments_rul_design}) are described below.
+
+\subsubsection{Data Splitting}
+
+Split the data into training and testing sets with ratio 4:1.
+Perform the split per subject, i.e. all data from one subject are either in the training or the testing set.
+We consider the split per subject is crucial so that the model does not learn some subject-specific patterns and so that we do not obtain overly optimistic evaluation results.
+The training and testing sets thus contain data about 80 and 20 subjects, respectively.
+
+\subsubsection{Candidate Models Selection}
+
+We use the training set to train the following regression models:
+\begin{itemize}
+    \item XGBoost (regression version) with n\_estimators $\in [3, 4, 5, 7, 8, 9]$ and max\_depth $\in [16, 32, 64, 128, 256]$;
+    \item SVR with gamma $\in [0.01, 0.1, 0.5, 1]$ and C $\in [0.1, 1, 10, 100]$;
+\end{itemize}
+and evaluate them using 4-fold cross validation\footnote{split the data again per subject, i.e. each testing (training) fold contains 20 (60) subjects}.
+We decide to evaluate each model using multiple metrics and later analyze whether they differ in what model they select as the best.
+
+As described in the theoretical part of this thesis in Section \ref{sec:approaches_rul_evaluation}, there exist many metrics and their variants how to evaluate a RUL prediction model.
+Therefore, we use only a small representative subset of the described metrics:
+\begin{itemize}
+    \item root mean squared error (RMSE);
+    \item mean absolute percentage error (MAPE);
+    \item MAPE@40, i.e. MAPE calculated only on RUL values lower or equal to 40;
+    \item MPH$_{10}$, i.e. mean prognostic horizon with $\alpha$ bound 10 --- a mean time prior to a failure so that all the predictions differs from actual RUL by 10 at maximum.
+\end{itemize}
+We choose RMSE because it is one of the most commonly used metric in scientific articles \cite{mosallam2016data, ellefsen2019remaining, babu2016deep, peng2019bayesian} and it gives the highest weight to the errors at high RUL values.
+Next, we choose MAPE as it should give more weight on the errors near the failure.
+At last, we choose metrics MAPE@40 and MPH$_{10}$ which should select models only by their performance at low RUL values.
+
+We try all the combinations of the above mentioned hyperparameters of the models totalling in 46 models (30 XGBoost models and 16 SVR models).
+We rank the models by mean score across the testing folds for each of the evaluation metrics so that trained model thus obtains 4 ranks all being $\in [1, 47]$.
+The lower the rank the better the model by the corresponding metric.
+
+To compare how the evaluation metrics rank the models we visualize a pair plot of the rankings of the models.
+As the set of candidate models we then select the models that are ranked as the best by at least one of the metrics.
+
+\subsubsection{Candidate Models Comparison}
+
+We use the testing set to calculate MAPE relative to RUL for every candidate model, i.e. MAPE at RUL 50 is calculated from all the predictions made for samples with an actual RUL 50.
+We plot the errors, visually compare whether and how the candidate models differ and discuss which model may be more suitable for the given task and why.
+
+\begin{figure}
+	\centering
+    \includegraphics[width=\textwidth,keepaspectratio]{%
+        experiments_rul_pairplot.pdf}
+	\caption{RUL prediction of turbofan engines: Pair plot of the ranks of the tested models.}
+	\label{fig:experiments_rul_pairplot}
+\end{figure}
+
+\subsection{Results}
+\label{sec:experiment_rul_results}
+
+Figure \ref{fig:experiments_rul_pairplot} shows a pair plot of the ranks of the 46 trained models by the evaluation metrics.
+We can see that only pair of metrics that roughly agrees on the ranking is MAPE@40 and MPH$_{10}$, although MPH$_{10}$ ranks several SVR models very high and MAPE@40 ranks them low.
+RMSE, MAPE and MPH agree on the best model, but highly disagree at the lower ranked models.
+MAPE@40, on the other hand, completely disagrees with RMSE and MAPE.
+
+\begin{table}
+\centering
+\begin{tabular}{lll}
+\toprule
+{} & \multicolumn{2}{c}{candidate model} \\
+{} &                                     A &                                     B \\
+\midrule
+rank by RMSE    &                            24 &                         1 \\
+rank by MAPE    &                            14 &                         1 \\
+rank by MAPE@40 &                             1 &                        20 \\
+rank by MPH\_10  &                             3 &                         1 \\
+RMSE            &                            42.9 &                      37.6 \\
+MAPE            &                              30.3 &                      27.5 \\
+MAPE@40         &                            38.4 &                      42.3 \\
+MPH\_10          &                              29.8 &                      32.8 \\
+regressor       &                  XGBoost &                       SVR \\
+\multirow{2}{}{hyperparameters}          & n\_estimators: 16 &  C: 100 \\
+{} &  max\_depth: 7 & gamma: 0.1 \\
+\bottomrule
+\end{tabular}
+\caption{RUL prediction of turbofan engines: the candidate models.}
+\label{tab:experiments_rul_params}
+\end{table}
+
+Table \ref{tab:experiments_rul_params} shows parameters and evaluation results of the candidate models, i.e. models selected as best by at least one metric.
+We can see that there are two candidate models --- the first, model A, selected by MAPE@40 and the second, model B, selected by the other three metrics.
+The first model has very low rank by MAPE and RMSE which is most probably caused by having very high errors at the RUL values higher than 40.
+From these single scores themselves, however, we can hardly interpret the models' performance as we do not know how it performs with respect to actual RUL values.
+Therefore, we perform the further analysis of the two models by plotting the errors relative to RUL.
+
+\begin{figure}
+	\centering
+    \includegraphics[width=\textwidth,keepaspectratio]{%
+        experiments_rul_relative_mape.pdf}
+	\caption{RUL prediction of turbofan engines: MAPE over various RUL values on the testing data set.}
+	\label{fig:experiments_rul_relative_mape}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}{.49\textwidth}
+        \includegraphics[width=\textwidth]{%
+            experiments_rul_prediction_11.pdf}
+    \end{subfigure}
+    \begin{subfigure}{.49\textwidth}
+        \includegraphics[width=\textwidth]{%
+            experiments_rul_prediction_18.pdf}
+    \end{subfigure}
+    \begin{subfigure}{.49\textwidth}
+        \includegraphics[width=\textwidth]{%
+            experiments_rul_prediction_33.pdf}
+    \end{subfigure}
+    \begin{subfigure}{.49\textwidth}
+        \includegraphics[width=\textwidth]{%
+            experiments_rul_prediction_57.pdf}
+    \end{subfigure}
+    \caption{RUL prediction of turbofan engines: examples of predictions for multiple subjects}
+    \label{fig:experiments_rul_prediction}
+\end{figure}
+
+Figure \ref{fig:experiments_rul_relative_mape} shows MAPE metric relative to RUL values calculated using the testing set.
+Figure \ref{fig:experiments_rul_prediction} then shows the candidate models' predictions for four random subjects.
+We can see that the SVR model (model B, selected by RMSE, MAPE and MPH) has consistently low MAPE at RUL values higher than 40 but the error then significantly rises with the RUL reaching 0.
+The XGBoost model (model A, selected by MAPE@40), on the other hand, has higher errors at RULs higher than 40 but is much more accurate at lower values.
+However, we see that the standard deviation of the errors of the XGBoost model is significantly higher than of the SVR model.
+From the predictions on the four subjects, we can see that the predictions of XGBoost indeed are very unstable over various RUL values.
+Therefore, we consider the SVR model to be better, even though it has slightly worse predictions at low RUL values, as we consider the variance of the XGBoost model to be unsuitable for a practical application.
+
+\subsection{Discussion}
+
+In this experiment we demonstrated RUL prediction on a run-to-failure data set of turbofan engines using a direct RUL prediction, i.e. regression-based, approach. 
+Our results show that RMSE and MAPE might highly disagree in model ranking.
+This suggests RMSE being unsuitable for RUL prediction model selection as the RUL prediction model is typically required to be more precise with RUL reaching lower values.
+Moreover, we demonstrated that using a single score to evaluate the whole model does not give necessary insight to evaluate its real-world performance.
+Rather, the errors should be plotted against actual RUL values as this might reveal that e.g. the model has very high variance of predictions over actual RUL values.
+That might for example reveal that the prediction has high variance over time which might make the model untrustable in practice --- a model that at one cycle predicts RUL 80 cycles and the second cycle predicts RUL 40 cycles (XGBoost model predictions for subject 11 at actual RUL 65 in Figure \ref{fig:experiments_rul_prediction}) is very likely not to be trusted by the users.

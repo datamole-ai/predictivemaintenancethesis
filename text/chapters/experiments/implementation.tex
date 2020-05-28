@@ -1,0 +1,52 @@
+\section{Implementation}
+\label{sec:experiments_implementation}
+
+The full implementation of the experiments is available as a GitHub repository\footnote{\url{https://github.com/datamole-ai/predictivemaintenancethesis}}.
+In this section, we provide a brief overview about the implementation details.
+
+\subsection{Technologies}
+
+We implemented the experiments as Jupyter notebooks \cite{jupyter} in Python using standard Python libraries for machine learning, scientific computations, and visualizations including Scikit-learn \cite{scikit-learn}, NumPy \cite{numpy}, SciPy \cite{2020SciPy-NMeth}, Matplotlib \cite{matplotlib}, Seaborn \cite{seaborn}, XGBoost \cite{xgboost} and Pandas \cite{pandas}.
+For the calculation of range-based precision and recall metrics we used a python implementation the authors of \cite{tatbul2018precision} provide at GitHub \cite{tsmetric}.
+Moreover, for the calculation of \acrshort{auprg} we used pyprg package \cite{prg}.
+
+\subsection{Hardware}
+
+We ran the experiments on a computational cluster using 256 GB of RAM and 32 CPU cores of AMD Opteron 6344 CPU units provided by Datamole\footnote{\url{www.datamole.cz}}.
+
+% \subsection{Implementation Details}
+
+% TODO
+
+% Scikit-learn \cite{scikit-learn} is one of the most commonly used Python libraries for machine learning which contains many standard classification and regression algorithms and TODO.
+% In \gls{pdm} data sets we often operate with the data for each subject separately, e.g. artificial labeling in failure prediction or calculating e.g. rolling features should be done for each subject separately.
+% Therefore, we implement a wrapper class over a scikit-learn's 
+
+% All the evaluation metrics are available as standalone functions compatible with 
+% All the experiments are are provided as a GitHub repository (TODO: cite).
+% The implementation includes downloading the data from the web,
+% preprocessing and data transformation, and all the evaluation metrics described
+%  in the previous chapter.
+% The experiments thus are reproducible and extensible, and their parts
+% are reusable in other works.\markbelow{c}{
+%     This section might be extended with the description of the Python library
+%     - if it will be part of the Work.
+% }
+
+% % Each experiment also contains script for downloading the data 
+
+% The parts of the experiments where algorithms dependent on a random seed (e.g. a random search algorithm for optimizing hyperparameters) use a hardcoded value of the seed.
+
+% The experiments are completely reproducible.
+
+% sklearn model for data in series format
+% implementation of various metrics and series_scorer wrapper
+
+
+\subsection{Reproducibility}
+
+Each experiment is completely reproducible.
+We use Poetry package manager \cite{poetry} to ensure that the same versions of Python libraries we used can be installed for reproducing the experiments.
+Our GitHub repository thus contains a \texttt{pyproject.toml} and \texttt{poetry.lock} files which can be used to install all the Python packages at the same version we used.
+We used a fixed random seed in all parts of code that depend on randomness so that reproducing the experiments always yields the same results.
+Reproducing each experiment then consist in running a Jupyter notebook which contain code for downloading the publicly available data set, preprocessing of the data and all the other steps of the experiments such as modeling and visualizing the results.

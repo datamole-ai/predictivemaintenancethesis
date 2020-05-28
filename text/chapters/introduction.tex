@@ -1,0 +1,45 @@
+\begin{introduction}
+
+\section{Motivation}
+
+\Acrfull{pdm} is a maintenance strategy where the goal is to monitor and analyze condition of a subject in order to plan maintenance actions at times when the subject suffers from a fault or when there is an increased probability that the subject will fail in near future.
+Such maintenance strategy can significantly reduce costs and possible downtime caused by failures in comparison with other strategies such as corrective or preventive where the maintenance actions are scheduled only when the machinery fails, and thus needs a correction, or are scheduled at regular intervals.
+
+The condition monitoring is done by collecting various kinds of data that can contain information about the health state of the subject.
+The analysis can be then done by building a predictive model that is, given condition monitoring data, capable of predicting whether the subject is faulty or estimating when a failure will occur.
+Nowadays, such \acrshort{pdm} models can be built utilizing \acrfull{ai}, more specifically \acrfull{ml}, techniques where the models are trained on condition monitoring and health data of multiple subjects.
+Depending on what type of condition monitoring data is available, various \acrshort{ml} modeling techniques can be used.
+
+A crucial part of \acrshort{pdm} is a performance evaluation of the built model, i.e. estimation how the model will perform in real-world.
+The performance evaluation has two major goals.
+The first goal is that it should serve as a way how to choose the best performing model when building models with different parameters or \acrshort{ml} algorithms.
+The second goal is that the performance evaluation should be intuitively interpretable --- e.g. how much in advance is the model able to predict a failure or how often the model predicts false alarms.
+As there exist various evaluation metrics which can be used for every modeling approach a good overview of different evaluation metrics and their advantages and disadvantages is crucial for a success of \acrshort{pdm} project in industry.
+
+\section{Related Work}
+
+Predictive maintenance has drawn huge attention in both scientific and industrial research over the past two decades.
+Numerous scientific articles describing novel \acrshort{ai} approaches to \acrshort{pdm} as well as many articles describing the application of \acrshort{pdm} in various domain such as predicting failures  in wind turbines, hard drives, high-speed trains or power plants has been published in past years \cite{yuan2019, peng2018novel, kauschke2016predicting, murray2005machine, prytz2014machine, liu2017svm, xiao2016probabilistic}.
+There have been published multiple reviews and surveys on predictive maintenance  systems, purposes and different approaches \cite{lei2018machinery, zhang2019data, ran2019survey, lee2014prognostics, jia2018review}.
+Some works specifically focus on the application of various approaches of artificial intelligence and machine learning in predictive maintenance \cite{jahnke2015machine, korvesis2017machine, tsui2015prognostics} while other works propose novel or adjusted evaluation metrics for the individual approaches \cite{saxena2010metrics, tatbul2018precision, kauschke2015challenges, weiss1998learning}.
+However, to our knowledge, there is no work that would provide an overview of multiple \acrshort{ml}-based modeling approaches and would focus at the same time on comparison of the different evaluation metrics.
+
+\section{Goals}
+
+The goals of this thesis are to:
+\begin{itemize}
+    \item give an introduction to the problematics of \acrshort{pdm};
+    \item provide an overview of several different \acrshort{ml}-based modeling approaches used for building \acrshort{pdm} models;
+    \item describe different evaluation metrics that can be used to assess the performance of the models built by different modeling approaches; 
+    \item compare and discuss the practical application of the different evaluation metrics by conducting experiments on real-world data sets.
+\end{itemize}
+
+\section{Organization of the Thesis}
+
+This thesis is organized as follows.
+In Chapter \ref{chapter:ml} we provide a minimal theoretical background of \acrshort{ml} including the classical machine learning tasks and their evaluation metrics.
+In Chapter \ref{chapter:pdm} we provide an introduction to \acrshort{pdm} in context of different maintenance strategies and we describe typical condition monitoring data used for building a \acrshort{pdm} model.
+In Chapter \ref{chapter:approaches} we review different approaches to \acrshort{pdm} utilizing \acrshort{ml} techniques and we describe how the built \acrshort{pdm} models can be evaluated.
+Finally, in Chapter \ref{chapter:experiments} we conduct experiments where we demonstrate the modeling approaches on real-world data sets, we compare their evaluation metrics and we discuss the metrics' practical application.
+
+\end{introduction}

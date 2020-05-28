@@ -1,0 +1,27 @@
+%%%%%%%%%%%%
+\usepackage{xcolor}
+\usepackage{stackengine}
+\setstackgap{L}{.5\baselineskip}
+\newcommand\markabove[2]{{\sffamily\color{red}\hsmash{$\uparrow$}%
+  \smash{\toplap{#1}{\scriptsize\bfseries#2}}}}
+\newcommand\markbelow[2]{{\sffamily\color{red}\hsmash{$\downarrow$}%
+  \smash{\bottomlap{#1}{\scriptsize\bfseries#2}}}}
+\usepackage{ifthen}
+\newcounter{todoindex}
+\setcounter{todoindex}{0}
+\newcommand\TODO[1]{%
+  \addtocounter{todoindex}{1}%
+  \expandafter\def\csname todo\roman{todoindex}\endcsname{#1}%
+  \markabove{c}{\Alph{todoindex}}%
+}
+\newcounter{index}
+\newcommand\showTODOs{%
+  \vspace{5ex}%
+  \rule{10ex}{.5ex}\textcolor{red}{TO-DO LIST}\rule{10ex}{.5ex}\\%
+  \setcounter{index}{0}%
+  \whiledo{\value{index} < \value{todoindex}}{%
+    \addtocounter{index}{1}%
+    \markabove{c}{\Alph{index}}  \csname todo\roman{index}\endcsname\\%
+  }%
+}
+%%%%%%%%%%%%%%%%

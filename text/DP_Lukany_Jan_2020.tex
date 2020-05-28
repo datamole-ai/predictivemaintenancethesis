@@ -1,0 +1,79 @@
+\documentclass[thesis=M,english]{FITthesis}[2019/12/23]
+
+
+\usepackage[utf8]{inputenc}
+
+\usepackage{amsmath} %advanced maths
+\usepackage{amssymb} %additional math symbols
+\usepackage{arydshln}
+\usepackage{booktabs}
+\usepackage{cite}
+\usepackage{csquotes}
+\usepackage{dirtree} %directory tree visualisation
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{makecell}
+\usepackage{mwe}
+\usepackage{multirow}
+\usepackage{pdfpages} %for including assignment.pdf
+\usepackage{rotating}
+\usepackage{subcaption}
+
+\input{misc/extra_setup}
+
+\graphicspath{{figures/}}
+
+% list of acronyms
+\usepackage[acronym,nonumberlist,toc,numberedsection=autolabel,nomain]{glossaries}
+\iflanguage{czech}{\renewcommand*{\acronymname}{Seznam pou{\v z}it{\' y}ch zkratek}}{}
+\loadglsentries{misc/acronyms}
+\makeglossaries
+
+\newcommand{\tg}{\mathop{\mathrm{tg}}} %cesky tangens
+\newcommand{\cotg}{\mathop{\mathrm{cotg}}} %cesky cotangens
+
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+% % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % % %
+\department{Department of Applied Mathematics}
+\title{Application of~Artificial Intelligence in~Predictive Maintenance}
+\authorGN{Jan} %author's given name/names
+\authorFN{Luk\'any} %author's surname
+\authorWithDegrees{Bc. Jan Luk\'any} %author's name with academic degrees
+\author{Jan Luk\'any} %author's name without academic degrees
+\supervisor{Ing. Tom\'a{\v s} Borovi{\v c}ka}
+\input{misc/acknowledgements}
+\input{misc/abstractCS}
+\input{misc/abstractEN}
+\placeForDeclarationOfAuthenticity{Prague} %where you have signed the declaration
+\input{misc/keywordsCS}
+\input{misc/keywordsEN}
+\declarationOfAuthenticityOption{5} %select as appropriate, according to the desired license
+% \website{TODO} %optional URL (remove entirely if you have no URL for this thesis)
+
+\begin{document}
+
+\input{chapters/introduction}
+
+\input{chapters/ml}
+
+\input{chapters/pdm}
+
+\input{chapters/approaches}
+
+\input{chapters/experiments}
+
+\input{chapters/conclusion}
+
+\bibliographystyle{iso690.bst}
+\bibliography{misc/ref}
+
+\appendix
+
+\printglossary
+
+\chapter{Contents of CD}\label{app:CDcontent}
+
+\input{misc/contents_of_cd}
+
+\end{document}

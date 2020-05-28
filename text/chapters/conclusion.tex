@@ -1,0 +1,42 @@
+\begin{conclusion}
+
+\Acrshort{pdm} can utilize \acrshort{ai} techniques to build a model that predicts condition of a subject.
+Depending on the available data and the degradation profile of the subject, various approaches how to predict the condition, i.e. approaches to \acrshort{pdm}, can be used.
+In this thesis, we provided an overview of three different approaches --- fault detection, failure prediction and remaining useful life prediction.
+In the theoretical part of this thesis, we theoretically described the approaches including their use case, data specifications, \acrshort{ai} modeling techniques and evaluation metrics.
+In the practical part of the thesis, we conducted experiments on real-world publicly available data sets where we demonstrated all the approaches and compared their evaluation metrics.
+
+The first approach, fault detection, is an approach suitable when there are no information about the actual failures of the subjects.
+It can be modelled as a binary classification or an anomaly detection.
+We identified two types of data for fault detection --- data with point-based faults and data with range-based faults.
+Moreover, we described that for each of the types of data different evaluation metrics should be used, namely classical precision and recall and range-based precision and recall.
+In the experiments, we demonstrated detection of point-based faults in air-pressurized systems of Scania trucks.
+The authors of the data set defined a cost function for false alarms and missed faults where the cost of missing a fault was significantly higher.
+The results of the experiment showed that AUROC and AUPRG were more suitable for model selection than accuracy or F1 score calculated at a fixed decision threshold.
+Moreover, the results show that precision and recall can be nicely translated into a real-world performance.
+
+The second approach, failure prediction, is an approach where the goal is to predict whether a failure will happen in near future --- in a monitoring window.
+In the theoretical part, we described how it can be formulated as a binary classification problem and that it can be modeled by artificially labeling the samples in the training data prior to the failure as positive.
+Regarding evaluation, we explained why classical classification metrics might be unsuitable for evaluation of failure prediction.
+We described how two other types of precision and recall metrics used in literature, reduced and range-based, can be used to mitigate the issues of classical precision and recall.
+We proposed a new definitions of precision and recall, which we call event-based, as a combination of the two former mentioned.
+In the practical part, we conducted an experiment demonstrating failure prediction in Azure telemetry data set where the task was to predict whether a failure will happen in next 24 hours.
+We compared classical and event-based precision and recall metrics in terms of model selection, decision threshold selection and interpretability.
+The results show, that the classical metrics might be sufficient for model selection but the event-based metrics may provide more realistic interpretation of the model's performance and they advise to select higher decision threshold, i.e. higher recall can be achieved with low or none decrease in precision.
+The event-based metrics have several parameters that they inherit from range-based metrics such as weight of existence reward or a positional bias function.
+Moreover, the amount of artificial labeling can be taken as a hyperparameter in model selection.
+Therefore, we see a space for future research in comparing how the choice of the event-based metrics' parameters affects model choice and whether choosing the amount of artificial labeling higher or lower than the monitoring window size might result in better model's performance.
+
+The last approach we cover, RUL prediction, is an approach where the goal is to predict the exact time left until the subject fails.
+In the theoretical part, we described two modeling approaches to \acrshort{rul} prediction, direct RUL prediction and HI-based RUL prediction, and we described various metrics how can be a RUL prediction model evaluated.
+In the practical part, we demonstrated direct RUL prediction approach on a turbofan engine degradation data set.
+We compared several metrics in terms of model selection and interpretability.
+The results show that RMSE and MAPE disagree in ranking of the models.
+This might be crucial for the practical application as it might be required for a RUL model to be more accurate as the time of a failure approaches.
+Moreover, we demonstrated that it might be essential for the practical evaluation of a RUL model to not only calculate one score but also to calculate the errors relative to RUL, e.g. visualize the errors relatively to how soon a failure will occur.
+
+It would be interesting to extend the scope of our experiments by using more data sets and more \acrshort{ml} models, preferably of different families.
+We assume that both the data sets and the \acrshort{ml} models might have effect on the behaviour of the evaluation metrics.
+However, we consider this as beyond the scope of this thesis.
+
+\end{conclusion}

@@ -1,0 +1,256 @@
+\section{Fault Detection}
+\label{sec:approaches_fd}
+
+Fault detection is an approach where the goal is to detect whether a subject suffers from a fault or a malfunction \cite{jia2018review}.
+It is thus a classification problem where the features are known condition monitoring data and the target variable is a binary health label --- healthy (no fault) or faulty.
+When a fault is detected a maintenance action can be immediately scheduled so that a potential failure of the subject (and thus its downtime) is avoided.
+
+From the approaches we describe in this chapter, fault detection approach is the least restrictive regarding data requirements --- it does not require any data about the actual failures of the subjects..
+Moreover, fault detection model can be build even when there are no health labels available at all.
+In that case, the faults can be considered as anomalies\footnote{as the fault indeed should be rare and out of distribution of the regular behaviour} and thus the fault detection can be formulated as an anomaly detection problem.
+
+\subsection{Data Specifications}
+\label{sec:approaches_fault_detection_data}
+
+\begin{table}
+	\centering
+	\caption{Example data for fault detection: (a) point-based faults, (b) range-based faults.}
+    \label{tab:approaches_fault_detection_data}
+    \subcaption{point-based faults}
+    \label{tab:approaches_fault_detection_data_point}
+    \begin{tabular}{|cccc|c|}
+    \hline 
+        \multicolumn{4}{|p{5cm}|}{\centering features}
+        & \multicolumn{1}{|p{2.1cm}|}{\centering fault}\\\hline
+        1.2  &           3.1 & $\cdots$ &      4.1 &        0 \\
+        2.1  &           4.2 & $\cdots$ &      8.0 &        1 \\
+    	2.0  &           2.4 & $\cdots$ &      2.2 &        0 \\
+    	1.9  &           1.4 & $\cdots$ &      9.2 &        1 \\
+    	1.0  &           2.7 & $\cdots$ &      2.3 &        0 \\
+        $\vdots$ &      $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$ \\
+    \end{tabular}
+    \bigskip
+    \subcaption{range-based faults}
+    \label{tab:approaches_fault_detection_data_range}
+	\begin{tabular}{|c|c|cccc|c|}
+    \hline
+    subject id
+    & time
+    & \multicolumn{4}{|p{4cm}|}{\centering features}
+    & fault\\
+    \hline
+    subject A & 2020-01-01 &          0.1 &         0.05 & $\cdots$ &  34.1 & 0 \\
+	subject A & 2020-01-02 &          0.3 &         0.12 & $\cdots$ &  34.2 & 0 \\
+    subject A & 2020-01-03 &          1.1 &         3.2  & $\cdots$ &  37.5 & 1 \\
+    subject A & 2020-01-04 &          1.2 &         3.1  & $\cdots$ &  37.9 & 1 \\
+    subject A & 2020-01-05 &          0.2 &         0.02 & $\cdots$ &  33.1 & 1 \\
+    subject A & 2020-01-07 &          2.5 &         0.21 & $\cdots$ &  35.9 & 0 \\
+    subject A & 2020-01-08 &          2.2 &         0.2  & $\cdots$ &  36.1 & 0 \\
+    $\vdots$ & $\vdots$ & $\vdots$ & $\vdots$ & $\ddots$ & $\vdots$ & $\vdots$ \\
+	\end{tabular}
+\end{table}
+
+Fault detection approach expects condition monitoring data as the features and optionally a binary label (healthy / faulty) as the target variable.
+The health labels are not required as the faults can be regarded as the most anomalous samples.
+Based on several real-world data sets for fault detection \cite{phm15, westernbearing, data_set_phm_2012, data_set_hydraulic_systems, data_set_aps_scania} we identified two types of data for fault detection --- data with range-based faults and data with point-based faults.
+
+\begin{figure}
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        approaches_fault_detection_range_example.pdf}
+    \centering
+    \caption{Example of range-based faults in a power plant}
+    \label{fig:approaches_fault_detection_range_example}
+\end{figure}
+
+\paragraph{Range-based faults}
+The data for fault detection can consist of time series where at each time point there is one sample that has condition monitoring data and a separate health label.
+The faults are thus located in time and they can last over multiple time points --- consecutive samples with positive health labels (fault present) can be considered as one fault.
+Inspired by an article by Tatbul et al. \cite{tatbul2018precision} where the object of study are range-based anomalies, i.e. anomalies lasting in time, we call such faults range-based faults.
+Figure \ref{fig:approaches_fault_detection_range_example} shows an example of range-based faults from a real-world data set containing faults in power plants \cite{phm15}.
+Table  \ref{tab:approaches_fault_detection_data_range} then show an example of the format of the data with range-based faults.
+
+\paragraph{Point-based faults}
+Data with point-based faults are data where each sample that contains condition monitoring data and a health label is considered as time-independent to all the other samples.
+Each fault can be then considered as a single point --- we thus call such faults point-based.
+Such data set is for example a Seeded Bearing Fault Test data set from Case Western University Bearing Data Center \cite{westernbearing} where various faults were seeded in bearings and their vibration data were measured on a test apparatus.
+Note, that as the vibration data are collected as signals, the data set consists of time series.
+However, in contrast to data with range-based fault, here each time series corresponds to one sample and thus one health label.
+An example of the format of the data with point-based faults is shown in Table \ref{tab:approaches_fault_detection_data_point}.
+
+The range-based faults are commonly more realistic --- in real-world the faults typically do last in time.
+On the other hand, the data with point-based faults can be much easier to collect --- a set of healthy and faulty subjects are inspected, e.g. in a laboratory conditions or at a workshop, as for example in case of seeded bearing fault test data set mentioned above.
+
+The range-based faults are often converted into the point-based faults before modeling as it is easier to build a fault detection model on the point-based data than on the time-series data.
+In the conversion, each range-based fault is split into multiple point-based ones (accordingly to the length of the range).
+It is important to note, though, that the range-based and point-based faults should be evaluated differently as the classical metrics for classification are not suitable for evaluation of range-based faults --- they would highly favor faults with long ranges (more in Section \ref{sec:approaches_fault_detection_evaluation}).
+
+The faults are typically rare as the subjects are most of the time  healthy\footnote{hopefully}.
+Therefore, real-world data sets for fault detection are commonly highly imbalanced with the samples having a positive label (faulty) being the minority.
+An exception can be data collected in laboratory conditions where for example the number of healthy and faulty samples can be the same.
+Such example is a condition monitoring of hydraulic systems data set\cite{data_set_hydraulic_systems} where multiple operation modes including a healthy mode and multiple faulty modes were simulated on a testing rig of a hydraulic system where the same amount of data was collected for every operation mode.
+% It is be questionable whether a data set with a lack of natural imbalance between the faulty and healthy states is suitable for building a fault detection model.
+
+Another important aspect of data for fault detection is the availability of health labels.
+As mentioned in previous chapter (Section \ref{sec:pdm_data}) the labels are typically obtained manually during e.g. corrective maintenances or by expensive methods such as disassembling of a machinery or an X-ray imaging.
+Therefore, it might happen that there are either no health labels available or they are not in a sufficient quantity or even quality.
+
+\subsection{Modeling}
+
+Fault detection is a binary classification problem --- the goal is to build a model that predicts a binary class where the negative class corresponds to a healthy state and the positive class to a faulty state.
+The choice of the specific \gls{ml} algorithm is affected by four aspects: format of the condition monitoring data (e.g. time series, spectra or simple features), type of faults (point-based faults vs range-based faults), the class imbalance and the (un)availability of the health labels.
+
+As shown in Figure \ref{fig:pdm_model_concept} an observation\footnote{one sample in the data set that containing condition monitoring data and for which we predict the label} of a subject can consist of a simple feature vector, one dimensional structures such as a time series or frequency spectra, images such as spectrograms or even an arbitrary combination of the mentioned.
+In case of a simple feature vector, classical ML algorithms such as SVM or decision trees are commonly used \cite{santos2015svm, mahadevan2009fault, zhao2012decision}.
+On the other hand, deep learning algorithms such as recurrent or convolutional neural networks are used as the state-of-the-art methods for fault detection with condition monitoring data containing time series or images \cite{guo2017deep, jia2016deep, janssens2016convolutional,yuan2019}.
+
+% TODO point-based vs range-based
+
+As the data sets for fault detection are commonly highly imbalanced (as described in \ref{sec:approaches_fault_detection_data}) techniques to increase the capability of the supervised classification algorithms to classify the minority class are commonly used.
+Such techniques include data set balancing before the training phase or a modification of the algorithm itself \cite{borovicka2012selecting}.
+
+In case there are only few labels available or there are no labels available at all, semi-supervised and unsupervised techniques such as anomaly detection with autoencoders can be used \cite{chandola2009anomaly, yuan2019}.
+
+\subsection{Evaluation}
+\label{sec:approaches_fault_detection_evaluation}
+
+In this section we describe how to evaluate a performance of a fault detection model.
+The questions that the evaluation of a fault detection model should answer are:
+\begin{itemize}
+    \item What is the probability that the model will detect a fault?
+    \item What is the probability that the model will predict a false alarm?
+\end{itemize}
+
+The questions above are in \gls{ml} commonly answered by precision and recall metrics.
+The evaluation of point-based faults follows classical definition of precision and recall as described in Section \ref{sec:ml_evaluation} as it is a standard binary classification.
+Regarding the range-based faults, we can convert them into point-based faults, and thus we can use the same classical evaluation metrics.
+However, the classical evaluation metrics might lead to misleading results for range-based faults.
+
+\begin{figure}
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        approaches_fault_detection_evaluation_motivation.png}
+    \caption{Point-based vs range-based faults (anomalies) \cite{tatbul2018precision}.}
+    \label{fig:approaches_fault_detection_evaluation_motivation}
+    \centering
+\end{figure}
+
+In case of range-based faults the predictions are located in time, i.e. they have a start time and end time.
+However, the predictions are made point-wise, i.e. each time point is assigned either positive or negative label.
+Therefore, it might happen that a range-fault is only partially predicted (i.e. there are both positive and negative predictions during the fault).
+Figure \ref{fig:approaches_fault_detection_evaluation_motivation} illustrates such problem where the range-based faults (in the figure named anomaly ranges) are only partially predicted.
+The notation used in the above mentioned figure and in the rest of this section will be as follows:
+\begin{itemize}
+    \item $R$ and $R_i$ --- the set of real fault ranges and the $i^\text{th}$ real fault range, respectively;
+    \item $P$ and $P_j$ --- the set of predicted fault range and the $j^\text{th}$ predicted fault range, respectively.
+\end{itemize}
+Below we define range-based recall and range-based precision metrics, for time series, respectively, as introduced by Tatbul et al. \cite{tatbul2018precision}.
+If not mentioned otherwise, all the definitions and statements below are taken and paraphrased from \cite{tatbul2018precision}.
+The authors of the article define the metrics on range-based anomalies instead of range-based faults.
+As we use several figures from the article for illustration we stick to the term anomaly, i.e. from now on an anomaly (range) stands for a fault (range).
+
+\subsubsection{Range-based Recall}
+
+Detection of a anomaly ranges can be broken down into four aspects: existence, size, position and cardinality.
+We define the four aspects below and then we describe how a range-based recall can be defined with respect to these four aspects of interest. 
+
+\paragraph{Existence}
+Detecting the existence of an anomaly (even by predicting only a single point in $R_i$) itself, might be valuable \cite{tatbul2018precision}.
+We define an existence reward function as follows:
+\begin{align*}
+    \text{ExistenceReward}(R_i, P) &= \begin{cases}
+            1, \text{ if } \sum_{j=1}^{N_p}|R_i \cap P_j| \geq 1,\\
+            0, \text{ otherwise}
+    \end{cases}\\
+\end{align*}
+
+\begin{figure}
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        approaches_fault_detection_evaluation_pseudocode.png}
+    \caption{Example definitions of an overlap size function and a positional bias function \cite{tatbul2018precision}.}
+    \label{fig:approaches_fault_detection_evaluation_pseudocode}
+    \centering
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.7\textwidth, keepaspectratio]{%
+        approaches_fault_detection_evaluation_biases.pdf}
+    \caption{Illustration of the effect of position bias function $\delta()$ in the overlap size function $\omega()$.}
+    \label{fig:approaches_fault_detection_evaluation_biases}
+    \centering
+\end{figure}
+
+\paragraph{Size and Position}
+The larger the size of the correctly predicted portion of $R_i$ the better.
+Moreover, in some cases, not only size, but also the relative position of the correctly predicted portion of $R_i$ might matter to the application --- e.g. we might want to detect the anomaly as soon as possible.
+For the representation of the size and position of the overlap we use a positional bias function $\delta()$ and an overlap size function $\omega()$.
+The $\omega()$ function should return a value in range $[0, 1]$ where 0 is no overlap and 1 is perfect overlap (the whole real range is predicted).
+The $\delta()$ function is be used by the $\omega()$ function to assign weights to individual positions in the real range, i.e. $\delta()$ is a parameter of $\omega()$.
+The simplest $\delta()$ is a flat bias --- it returns the same weight for all samples.
+However, if for example an early prediction is more valuable, then the samples in the front of the real range can be assigned higher weight.
+Both of these functions can be set based on the needs of the applications.
+Figure \ref{fig:approaches_fault_detection_evaluation_pseudocode} shows an example of definition of the overlap size function $\omega()$ and several examples of positional bias functions --- flat, front-end and back-end.
+Figure \ref{fig:approaches_fault_detection_evaluation_biases} then illustrates how choice of a positional bias function $\delta()$ affects the value of $\omega()$ function.
+Using the $\omega()$ and $\delta()$ we define the size and the position of the overlap as
+\begin{align*}
+    \sum_{j=1}^{N_p}\omega(R_i, R_i \cap P_j, \delta) \in [0, 1].
+\end{align*}
+
+\paragraph{Cardinality}
+Detecting $R_i$ with a single continuous prediction range $P_j \in  P$ may be more valuable than doing so with multiple different predicted ranges in a fragmented manner.
+Therefore, we use a cardinality factor $\in (0, 1]$ that expresses how many predicted ranges overlap with the real range.
+Cardinality factor equal to 1 is the best value, i.e. the real range overlaps with at most one predicted range, and the closer to zero the more predicted ranges overlap with it:
+\begin{align*}
+    \text{CardinalityFactor}_\gamma(R_i, P) &= \begin{cases}
+        1, \text{ if } R_i \text{ overlaps with at most one } P_j \in P \\
+        \gamma(R_i, P) \in (0, 1], \text{otherwise}.
+    \end{cases}\\
+\end{align*}
+The value $\gamma$ (overlap cardinality function) can be set for example to $1/n$ where $n$ is the number of predicted fault ranges that overlap with the real fault range ($R_i$).
+Figure \ref{fig:approaches_fault_detection_evaluation_cardinality} illustrates examples of cardinality values for two different sets of predictions.
+
+\paragraph{Overlap}
+Combining the overlap size function $\omega()$ and the cardinality factor we define an overlap reward as:
+\begin{align*}
+    \text{OverlapReward}_{\omega, \delta, \gamma}(R_i, P) &= \text{CardinalityFactor}_\gamma(R_i, P) \times \sum_{j=1}^{N_p}\omega(R_i, R_i \cap P_j, \delta).
+\end{align*}
+The overlap reward is in range $[0, 1]$ and expresses the amount of overlap including the size, position and cardinality.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.8\textwidth, keepaspectratio]{%
+        approaches_fault_detection_evaluation_cardinality.pdf}
+    \caption{Illustration of the effect of the cardinality function ($\gamma()$) in range-based recall.}
+    \label{fig:approaches_fault_detection_evaluation_cardinality}
+    \centering
+\end{figure}
+
+\paragraph{Detection Score}
+
+Taking the existence and overlap rewards we can quantify the amount how much each fault range is predicted by a detection score $\in [0, 1]$:
+\begin{align*}
+    \text{DetectionScore}_{\alpha, \omega, \delta, \gamma}(R_i, P) = &\alpha \times \text{ExistenceReward}(R_i, P) \\
+    &+ (1 - \alpha) \times \text{OverlapReward}_{\omega, \delta, \gamma}(R_i, P) \\ 
+\end{align*}
+where $\alpha \in [0, 1]$ is a parameter defining relative weight between the existence and the overlap reward.
+Setting $\alpha = 1$ represents a situation when we are only interested in whether there is at least one positive prediction in the fault range whereas $\alpha = 0$ represents a situation when we are rather interested in the amount of true predictions within the fault range.
+
+\paragraph{Range-based Recall}
+Taking the detection score we can then define the range recall as
+\begin{align*}
+    \text{recall-range}_{\alpha, \omega, \delta, \gamma}(R, P) = \frac{\sum_{i}\text{DetectionScore}_{\alpha, \omega, \delta, \gamma}(R_i, P)}{N_r}.
+\end{align*}
+where $N_r$ is the amount of fault ranges.
+
+\subsubsection{Range-Based Precision}
+
+Range-based precision can be then defined similarly as recall with swapping real and predicted fault ranges:
+\begin{align*}
+    \text{precision-range}_{\alpha, \omega, \delta, \gamma}(R, P) = \frac{\sum_{i}\text{DetectionScore}_{\alpha, \omega, \delta, \gamma}(P_i, R)}{N_p}.
+\end{align*}
+The range-based precision thus basically represents how much the predicted ranges overlap with the real ranges.
+
+% \subsection{Summary}
+
+% Fault detection is an approach where the goal is to identify whether the subject suffers from a fault.
+% It is suitable when there are no data about f
+% TODO

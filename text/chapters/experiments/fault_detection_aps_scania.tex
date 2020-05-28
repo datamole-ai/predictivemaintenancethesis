@@ -1,0 +1,213 @@
+\section{Experiment --- Fault Detection in Scania Trucks}
+\label{sec:experiments_fault_detection}
+
+Fault detection is an approach where the goal is to build a model that detects faulty behaviour, malfunction, of the subject.
+It can be modeled as a binary classification or an anomaly detection --- depending on whether health labels are available or not.
+It is suitable in cases when there are no or insufficient data about actual failures, i.e. breakdowns, of the subjects.
+In this section we describe an experiment where we demonstrate this approach and compare its evaluation metrics on one real-world data set.
+
+The data used for building a fault detection model can contain either point-based or range-based faults, i.e. faults with no temporal location or faults located in time and lasting for a certain period of time (for more details see Section \ref{sec:approaches_fault_detection_data}).
+Since detection of range-based faults is partly similar to failure prediction approach, which we demonstrate in the following experiment, we focus in this experiment on fault detection of point-based faults.
+
+For the purpose of our experiment we choose a data set containing point-based faults in air pressurized system of Scania trucks \cite{Dua:2019}.
+We choose this data set because its authors clearly define an objective function --- a cost function assigning costs to false alarms and missed faults (FPs and FNs) expressed in the amount of dollars.
+The authors then clearly define the task as to build a model that minimize this cost function.
+The cost function allows us to demonstrate how decision threshold of the built classifier can be selected in practice.
+
+\subsection{Data Set Description}
+
+The data set we use in this experiment contains condition monitoring data and point-based faults in an air pressure system of heavy Scania trucks \cite{Dua:2019}.
+It consists of 76000 records and 171 columns where each row represents one truck with the first column containing a binary health label (positive class represents a fault) and the next 170 columns containing anonymized features.
+The provided data are  already split into training and testing set where the training set contains 60000 records and the testing set contains 16000 records.
+Both the sets are highly imbalanced --- the ratio of positive classes to the total amount of records is approximately 1.67 \% in the training set and 2.34 \% in the testing set.
+
+\paragraph{Preprocessing}
+
+The data set is provided partially preprocessed in a form of two CSV files, one for training set and one for testing set.
+All the features are numerical of which some of them are provided already binned --- i.e. split to a finite number of intervals. 
+There are some missing values in multiple feature columns which we impute by a mean of each column in the training data\footnote{Note that it is very important not to impute missing values by a mean values of the whole data set as that would contaminate the data training data with the information from the testing data.}.
+Otherwise, we consider the data set as preprocessed and suitable for the classification algorithm we chose (described later below).
+
+\subsection{Task Definition}
+
+The authors of the data set define a cost function assigning costs in dollars for the false predictions:
+\begin{itemize}
+    \item \$ 10 per FP --- cost of unnecessary check needed to be done by a mechanic at workshop;
+    \item \$ 500 per FN --- missing a faulty truck that may cause a breakdown.
+\end{itemize}
+The task the authors set is to thus build a fault detection model using the training set that predicts whether a fault is present in the truck and to minimize total cost of the false predictions in the testing set.
+
+\subsection{Design of Experiment}
+
+\begin{figure}
+	\centering
+    \includegraphics[width=\textwidth,keepaspectratio]{%
+        experiments_fault_detection_design.pdf}
+	\caption{Fault detection in Scania Trucks: Design of experiment.}
+	\label{fig:experiments_fault_detection_design}
+\end{figure}
+
+Our data set contains enough labels for both positive and negative samples and thus we can approach the fault detection as a supervised classification.
+For the purpose of our experiment, we choose only one type of classification algorithm --- gradient boosted trees, more specifically its Python implementation XGBoost \cite{xgboost}.
+XGBoost has several hyperparameters that should be tuned such as number of trees (estimators), max depth of the trees or minimal number of samples to perform a further split (min\_child\_weight).
+Moreover, the XGBoost is a probabilistic classifier, i.e. it can predict probabilities instead of the binary classes themselves.
+A decision threshold that optimizes minimizes the total costs can be thus tuned.
+
+We train and evaluate a large amount of XGBoost models with different hyperparameters on a subset of the training data using various metrics and a cross-validation.
+We compare how the metrics rank the different models and we select a set of candidate models --- the models that are ranked as best by at least one metric.
+Afterwards we compare the candidate models in terms of precision and recall over various thresholds on rest of the training set --- a validation set.
+Since we have a clearly defined cost function, we select as the best model (out of the candidate models) the one that achieves minimal total cost and we set it the corresponding decision threshold.
+Once we select the final model we evaluate it using the testing set and discuss its real-world performance.
+
+The individual steps of the experiment are described in details below and illustrated in Figure \ref{fig:experiments_fault_detection_design}.
+
+\subsubsection{Data Splitting}
+
+The data set is provided already split into a training and testing set, as described above.
+For our experiment we need one more set --- a validation set --- which we will use for selecting the best decision threshold.
+Therefore we split the original training set into new training set and a validation set with a ratio 4:1 (i.e. the new training set thus contains 48000 records and the validation set 12000 records).
+We perform the split in a stratified way so that the ratio of positive and negative samples remains the same in the new training and the validation sets.
+When speaking about a training set we will from now on refer to this new training set.
+
+\subsubsection{Candidate Models Selection}
+
+\begin{table}
+    \centering
+    \begin{tabular}{cc}
+    hyperparameter
+    & values\\
+    \hline
+    max\_depth & ${2, 3, 4, 5, 6, 7}$\\
+    n\_estimators & ${4, 8, 16, 32, 64, 128}$\\
+    learning\_rate & ${0.05, 0.1, 0.15, 0.2}$\\
+    booster & {gbtree, dart}\\
+    min\_child\_weight & ${ 1,  4, 16, 64}$\\
+    subsample & ${0.6, 0.7, 0.8, 0.9, 1}$\\
+    colsample\_bytree & ${0.6, 0.7, 0.8, 0.9, 1}$\\
+    \end{tabular}
+    \caption{Fault detection in Scania trucks: Set of tuned hyperparameters for the XGBoost}
+    \label{tab:experiments_fault_detection_aps_hyperparameters}
+\end{table}
+
+We use the training set and a random search algorithm with cross-validation to train and evaluate multiple XGBoost models with different hyperparameters.
+Table \ref{tab:experiments_fault_detection_aps_hyperparameters} shows the set of hyperparameters we select from.
+For evaluation we use 10-fold cross-validation and we evaluate each model with four metrics --- AUROC, AUPRG, F1 score and accuracy --- and we calculate a mean score of the respective metrics over the testing folds.
+F1 score and accuracy are both calculated on the predictions made by using the decision threshold equal to 0.5.
+
+Training and evaluation of one model takes approximately one minute --- the cross-validation (10 folds) for one set of hyperparameters thus takes approximately 10 minutes.
+As we have available 32 CPU cores we run 160 iterations of the random search (5 for each CPU) so that it takes approximately 50 minutes.
+As a result we obtain a list of 160 models each assigned four scores and four ranks (each rank in range $[1, 160]$ with rank 1 being the best).
+
+To compare the rankings of the models by the evaluation metrics we visualize a pairplot of the models' ranks.
+
+Finally, from the trained models we select a set of candidate models.
+A candidate model is a model that is ranked as the best model by at least one of the evaluation metrics.
+
+\subsubsection{Final Model and Decision Threshold Selection}
+
+We retrain every candidate model using the whole training set and we use the validation set to calculate and visualize precision, recall and total cost (calculated as \$ 10 for FP and \$ 500 for FN) over various decision thresholds.
+As the final model we select the model with the lowest total cost and we set it the corresponding decision threshold.
+
+\subsubsection{Evaluation and Performance Interpretation}
+
+We use the testing set to calculate accuracy, precision, recall and total cost.
+We interpret the metrics and discuss how the model performs in real-world.
+
+\subsection{Results}
+
+\begin{figure}
+	\centering
+    \includegraphics[width=\textwidth,keepaspectratio]{%
+        experiments_fault_detection_aps_pairplot.pdf}
+	\caption{Fault detection in Scania Trucks: Pair plot of the evaluation metrics obtained from the random search.}
+	\label{fig:experiments_fault_detection_aps_pairplot}
+\end{figure}
+
+Figure \ref{fig:experiments_fault_detection_aps_pairplot} shows a pair plot of rankings of all the XGBoost models.
+We can see that F1 and accuracy agree on the ranking of the models as well as AUROC and AUPRG do.
+However, the two pairs disagree with each other, i.e. both AUROC and AUPRG disagree with both F1 and accuracy.
+This is not very surprising as the F1 and accuracy are based only on predictions at threshold 0.5 whereas AUROC and AUPRG evaluate the model over all the thresholds.
+
+\begin{table}
+    \centering
+    \begin{tabular}{lll}
+    \toprule
+    {} & \multicolumn{2}{c}{candidate model} \\
+    {} &         A &         B & \\
+    \midrule
+    rank by AUPRG               &         1 & 33 \\
+    rank by F1                  &        23 & 1 \\
+    rank by ACCURACY            &        23 & 1 \\
+    rank by AUROC               &         1 & 49 \\
+    AUPRG score                       &  0.999812 & 0.999767 \\
+    F1 score                          &  0.808412 & 0.831349 \\
+    ACCURACY score                    &  0.994146 & 0.994875 \\
+    AUROC score                       &  0.990641 & 0.988216 \\
+    XGBoost param:subsample        &       0.9 &        0.8 \\
+    XGBoost param:n\_estimators     &       256 &   256 \\
+    XGBoost param:min\_child\_weight &        16 &      1 \\
+    XGBoost param:max\_depth        &         5 &     7 \\
+    XGBoost param:learning\_rate    &       0.1 &       0.2 \\
+    XGBoost param:colsample\_bytree &       0.7 &       0.9 \\
+    XGBoost param:booster          &      dart & dart \\
+    \bottomrule
+    \end{tabular}
+    \caption{Fault detection in Scania trucks: Ranks, scores and parameters of the candidate models}
+    \label{tab:experiments_fault_detection_aps_selected_models}
+\end{table}
+
+We identify two candidate models, i.e. models that are ranked by at least one metric as the best model
+Table \ref{tab:experiments_fault_detection_aps_selected_models} shows their ranks and evaluation scores and the XGBoost's hyperparameters.
+As expected, one of the models, model A, is selected by AUROC and AUPRG while the other, model B, is selected by F1 and accuracy.
+Based on the XGBoost's hyperparameters we can see that the model A has lower complexity than the model B.
+The model A has the same number of estimators (trees) but it has lower maximum depth and higher minimal child weight\footnote{the minimal child weight defines the minimal number of samples in the node so that the node can be further split}.
+The lower complexity models are always more preferable as they have a lower risk of being overfitted.
+Therefore, from the current view we assume the model A as better so far.
+
+% \subsubsection{Final Model and Decision Threshold Selection}
+
+\begin{figure}
+    \centering
+    \begin{subfigure}{\textwidth}
+        \includegraphics[width=\textwidth,keepaspectratio]{%
+        experiments_fault_detection_aps_cost_threshold_auroc.pdf}
+        \caption{Model selected by AUROC and AUPRG}
+    \end{subfigure}
+    \begin{subfigure}{\textwidth}
+        \includegraphics[width=\textwidth,keepaspectratio]{%
+        experiments_fault_detection_aps_cost_threshold_f1.pdf}
+        \caption{Model selected by F1 and accuracy}
+    \end{subfigure}
+    \caption{Fault detection in Scania trucks: Precision-recall-cost plot for the candidate models.}
+    \label{fig:experiments_fault_detection_aps_cost_threshold}
+\end{figure}
+
+Figure \ref{fig:experiments_fault_detection_aps_cost_threshold} shows plots of costs and precision and recall scores over various decision thresholds for both of the candidate models.
+We can see that the optimal threshold, i.e. the threshold where the cost is minimal, is very low and thus the recall is significantly higher than the precision.
+This is because the cost of the FNs is much higher than of the FPs and thus it is better to have as few FNs as possible, i.e. having a high recall.
+The lowest costs per model (annotated in the figure) are as follows:
+\begin{itemize}
+    \item model A: \$ 5210 at decision threshold $2.4e^{-2}$;
+    \item model B: \$ 7290 at decision threshold $1.3e^{-3}$.
+\end{itemize}
+The results thus confirm that the model having the lower complexity, the model A, selected by AUPRG and AUROC, is better.
+Therefore, we select the model A as our final model and we set its decision threshold to $2.4e^{-2}$.
+
+The evaluation of the final model (model A) on the testing set and using the decision threshold $2.4e^{-2}$ gives following results: 
+\begin{itemize}
+    \item Recall: 0.99
+    \item Precision: 0.17
+    \item Cost: 18950
+\end{itemize}
+The recall can be translated as that the model will detect 99 \% of faults.
+The precision can be translated as that only 17 \% of positive predictions will actually correspond to a faulty truck, or in other words 83 \% of the predictions will be false alarms.
+
+\subsection{Discussion}
+
+In this experiment we demonstrated how to build a binary classification model for detection of point-based faults of Scania trucks.
+The results of the experiment show that AUPRG and AUROC metrics were better choice for model selection than F1 and accuracy metrics this data set and the XGBoost model.
+That is because there might be different importance of FP and FN (in our experiment we needed to have fewer amount of FN than FP) and thus it might be better to select a model that performs well at all thresholds and leave the decision threshold selection for later, when the specific domain needs are known.
+
+Regarding evaluation of the model's performance in practice, we demonstrated that precision and recall can nicely interpret the model's performance, i.e. the probability that a fault will be detected and how often will the model predict a false alarm.
+It is good to note though, that the metrics cannot take into account any time information, e.g. how early will be the faults detected, as the point-based data do not contain any time information.
+To include the temporal information in evaluation, one has to use either data with range-based faults or another \acrshort{pdm} approach.

@@ -1,0 +1,49 @@
+
+\section{Terminology}
+\label{sec:pdm_terminology}
+
+\paragraph{Subject}
+
+Subject is what is being monitored and what is, ultimately, to be maintained.
+It may be a whole system such as a power plant, a machinery such as a compressor or a specific component such as a bearing.
+Other frequently used terms: asset, unit under test (UUT), machine, equipment
+
+\paragraph{Health}
+Health is an ability of the subject to operate, i.e. its ability to fulfill its purpose.
+
+\paragraph{Fault}
+Fault is a change in the subject that negatively effects its health.
+When a subject suffers from a fault, it is said to be malfunctioning.
+A fault typically starts at a certain time point and grows in severity over time.
+There might be several different fault that can occur to the subject --- fault types.
+For example, typical faults types of bearings are inner race fault, outer race fault and rolling  element (ball) fault.
+
+\paragraph{Health Label}
+
+Health label is a representation of the subject's health as a categorical variable.
+The health label can be either binary, e.g. healthy or faulty, or multiclass, e.g. healthy or one of fault types.
+Synonyms: condition, condition class, condition label.
+
+\paragraph{Failure}
+Failure is a special health state of the subject when it is unable to operate.
+It is a typically a reason for performing a corrective maintenance, i.e. a repair.
+ - end of life (EoL)
+
+\paragraph{Health Indicator}
+Health indicator is a measure of health as a continuous variable which represent.
+loss of health, e.g. loss of battery capacity or amount of milling tool wear.
+A health indicator can be also perceived as a measure of fault's severity.
+ - Health index
+
+\paragraph{Failure Threshold}
+Failure threshold is a value of health indicator that is no longer considered as safe
+or permissible for operation.
+
+\paragraph{Remaining Useful Life}
+Remaining useful life of a subject is a special case of a health indicator which represents an absolute value of time remaining to failure.
+ - time to failure
+
+\paragraph{Fault Detection}
+ - Condition classification
+ 
+\paragraph{Fault detection, isolation and recovery}

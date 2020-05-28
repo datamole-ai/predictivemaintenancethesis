@@ -1,0 +1,277 @@
+\section{Experiment --- Failure Prediction in Azure Telemetry Data Set}
+\label{sec:experiments_failure_prediction}
+
+This section describes an experiment where we demonstrate failure prediction approach and we compare its evaluation metrics.
+Failure prediction is an approach where the goal is to build a model that predicts whether a failure will happen in near future --- in the monitoring window.
+This approach is suitable in cases when there are available data about failures and when the failures are expected to be preceded by a faulty behaviour of the subject.
+
+The modeling typically consist of formulating the problem as a binary classification where before training the classifier, the samples prior to the failure are artificially labeled as positive.
+This, however, introduces challenge in the model's evaluation as there are more positive samples than failures.
+In Section \ref{sec:approaches_failure_prediction_evaluation} we described how classical precision and recall metrics can be modified so that they provide more realistic scores.
+We call the modified metric event-based precision and event-based recall.
+In this experiment, our goal is to compare the classical and event-based metrics in terms of model selection, the model's decision threshold selection and interpretability.
+
+As said, failure prediction consists in predicting whether a failure will happen in the monitoring window.
+The size of the monitoring window can be either predefined by the domain (e.g. it might be known that the faulty behaviour of the subjects lasts no longer than 7 days before the failure) or it can be tuned as a hyperparameter.
+For the purpose of this experiment, we choose a data set that has the size of the monitoring window already predefined by the domain experts.
+The data set we chose is a publicly available Azure AI Gallery data set \cite{data_set_azure_ai_gallery} which contains multiple data sources like sensor measurements and failure logs about 100 machines and the authors of the data set clearly define the task: predict whether a failure will happen in next 24 hours.
+
+\subsection{Data Set Description}
+
+\begin{figure}
+	\centering
+    \includegraphics[width=\textwidth,keepaspectratio]{%
+        experiments_failure_prediction_azure_data.png}
+	\caption{Failure prediction in Azure data set: Example of one machine's data. The vertical dotted lines represent the failure events.}
+	\label{fig:experiments_failure_prediction_azure_data}
+\end{figure}
+
+The data set we use in this experiment is an Azure AI Gallery Predictive Maintenance data set \cite{data_set_azure_ai_gallery} which contains continuously collected condition monitoring data and failure labels of an unspecified machinery.
+The data consist of telemetry data, error logs, maintenance logs and failure logs for 100 machines collected during whole year of 2015.
+The telemetry data include voltage, rotation, pressure and vibration measurements and are collected on an hourly basis --- one value per hour.
+The error log contains time stamped information about non-breaking errors.
+The maintenance log contain time stamped events of both scheduled maintenance actions (regular inspection) and unscheduled maintenance actions (failures) .
+The failure logs contain time stamped information when the failures happened.
+When a failure happens on the machinery the failure is repaired and the machinery is put to operation again.
+
+\paragraph{Preprocessing}
+
+The data are available as separate CSV files for telemetry data and error, maintenance and failure logs.
+As the telemetry data are available on an hourly basis we round the time stamps of all the events, i.e. maintenance actions, errors and failures, to the closest hour and join the data on time stamps and machine identifications.
+To help the classifier identify temporal patterns in the data we create following time-based features (for every time point): 
+\begin{itemize}
+    \item mean, variance and sum of the telemetry data for the past 7 days;
+    \item time from the last maintenance action, from the last error and from the last failure.
+\end{itemize}
+Figure \ref{fig:experiments_failure_prediction_azure_data} shows an example of the telemetry data for one machine.
+
+\subsection{Task Definition}
+
+The task, defined by the authors of the data set, is to predict whether a failure will happen in next 24 hours.
+The authors do not mention any warning window necessary for the predictions to be useful (e.g. so that there is enough time for the maintenance to be scheduled).
+Though it might be that there is no warning window necessary, we assume that is highly unlikely in practice and we assume the authors of the data set probably have not thought about the possibility of defining a warning window.
+Therefore, we set the warning window ourselves to 8 hours, i.e. one third of the monitoring window.
+This means that during the evaluation, all the predictions made less than or equal to 8 hours prior to the failure will be ignored.
+The size of our prediction window, i.e. the size of an interval prior to the failure where the training samples are considered as positive, is thus 16 (monitoring window minus warning window).
+
+\subsection{Design of Experiment}
+
+We approach the task as a supervised binary classification problem where we artificially label all the samples 24 hours (size of monitoring window) prior to each failure as positive to train the model.
+Regarding evaluation of the model, we are mainly interested in precision and recall, i.e. a probability that a true prediction actually predicts the failure and a probability of predicting a failure.
+However, as there are more true positive samples than the amount of failures it is not straightforward way how to use these metrics.
+In Section \ref{fig:approaches_failure_prediction_evaluation} we described a concept of event-based precision and recall where the TPs are replaced by detection scores and FP are replaced by discounted FP.
+Therefore, we design our experiment as to compare how these event-based metrics affect the model selection and decision threshold selection in comparison with the classical precision and recall.
+
+The event-based metrics use detection score which has four parameters that can be set based on the domain specific needs.
+The parameters are a weight between existence and overlap ($\alpha$), a cardinality function ($\gamma$), an overlap function ($\omega$) and a positional bias function ($\delta$).
+For more details about the parameters see Section \ref{sec:approaches_fault_detection_evaluation}.
+For our task, we set $\alpha = 0.8$ as we are rather interested in the existence of a true prediction in the prediction window than the amount of overlap.
+The cardinality, i.e. whether the predictions are fragmented, does not matter in failure prediction that much and thus we set it to be always equal to one.
+As an overlap function we use standard suggested definition in Section \ref{sec:approaches_fault_detection_evaluation} and we set the positional bias to flat --- i.e. we do not distinguish whether the prediction is at the beginning of the prediction window or at the end.
+As result, the detection score of every even is thus either equal to 0 (when there are no predicted positive samples) or is in range $[0.8125, 1]$\footnote{0.8 for the existence of a positive prediction in the prediction window plus $0.2 times 1/16$ (0.0125) for every positive prediction}, depending on the amount of positive predictions in the prediction window.
+
+As the classification algorithm we choose gradient boosted trees, more specifically XGBoost \cite{xgboost}, which is capable of predicting probabilities of classes and thus the decision threshold can be tuned.
+
+Compared to classical binary classification, in failure prediction the predictions can be smoothed.
+It can for example happen that the model will predict a lone positive prediction among negative predictions which can be caused for example by a noise in the data.
+Therefore, the predictions are typically smoothed e.g. using a rolling mean where the predicted probability of each samples is calculated as the mean of several past predictions (including the current).
+For more details about prediction smoothing see Section \ref{sec:approaches_failure_prediction}.
+In this experiment, we use the rolling mean for smoothing of predicted probabilities and we tune the smoothing window size as a hyperparameter.
+
+We design the experiment to consist of three steps (illustrated in Figure \ref{fig:experiments_failure_prediction_design}):
+\begin{itemize}
+    \item data splitting --- split the data into training and testing set;
+    \item candidate models selection --- use the training set and cross-validation to train and evaluate XGBoost model with different hyperparameters and smoothing window sizes, compare how the metrics rank the trained models and select a set of candidate models, i.e. models that are ranked at least by one metric as best;
+    \item PR analysis --- analyze candidate the models on the testing set using both classical and event-based precision and recall, discuss which model is the most suitable for the given task and compare the metrics' interpretability;
+\end{itemize}
+The individual steps of the experiment are in detail described below.
+
+\begin{figure}[H]
+    \centering
+        \includegraphics[width=.8\textwidth]{%
+            experiments_failure_prediction_design.pdf}
+    \caption{Failure prediction in Azure data set: Design of experiment}
+    \label{fig:experiments_failure_prediction_design}
+\end{figure}
+
+\subsubsection{Data Splitting}
+
+We split the data into training and testing set.
+We identified two plausible splitting strategies: split by time and split by subject.
+The former consists in selecting the newest data (e.g. last two months, November and December) as the testing and the older data as the training.
+However, such splitting strategy might make the model to learn some subject specific patterns.
+Therefore, we adopt the latter splitting strategy: split by subject.
+We split the data set as follows:
+\begin{itemize}
+    \item training set: 80 subjects
+    \item testing set: 20 subjects
+\end{itemize}
+
+\subsubsection{Candidate Models Selection}
+
+We use the training set to train and evaluate a large amount of XGBoost models with different XGBoost's hyperparameters and smoothing windows and we select a set of candidate models --- models ranked as best by at least one metric.
+
+As the evaluation metrics we use AUPRG, F1 score and event-based F1 score.
+The event-based F1 score is calculated based on event-based precision and recall metrics with the parameters as described above.
+The AUPRG (area under precision-recall-gain curve) is calculated based on classical precision and recall.
+We do not use the event-based metrics to calculate the area under event-based PR curve as the calculation of it is extremely computationally expensive.
+The regular AUPRG is calculated by sorting the samples by predicted score and the amount of true positive and false positive predictions can be then calculated using a cumulative sum operations \cite{pr_efficient}.
+Regarding the event-based metrics, however, the precision and recall have to be calculated separately for each threshold.
+The calculation of e.g. hundreds of thresholds then can take tens of minutes which is more than the amount of time for training the model itself.
+Therefore, we do not calculate the area under event-based precision-recall(-gain) curve and we use only the event-based F1 score calculated based on predictions made by the default decision threshold 0.5.
+
+We run a random search algorithm with three-fold cross validation to train and evaluate the models.
+The average training time of one fold is 10 minutes.
+Since we have 32 CPU cores available we run 64 random search iterations so that the total computation time is approximately one hour.
+The models are then assigned an average score over the testing folds and are assigned a corresponding rank for every metric.
+Every trained model has thus assigned ranks per each metric in range $[1, 64]$ where rank 1 stands for the model with best score and rank 64 stands for the model with worst score.
+
+\begin{table}
+    \centering
+    \begin{tabular}{ll}
+    hyperparameter
+    & values\\
+    \hline
+    smoothing window & $\{1, 3, 5, 7\}$ \\
+    XGBoost: max\_depth & $\{2, 3, 4, 5, 6, 7\}$ \\
+    XGBoost: n\_estimators & $\{4, 8, 16, 32, 64, 128, 256\}$ \\
+    XGBoost: learning\_rate & $\{0.05, 0.1, 0.15, 0.2\}$ \\
+    XGBoost: booster & \{'gbtree', 'dart'\} \\
+    XGBoost: min\_child\_weight & $\{ 1,  4, 16, 64\}$ \\
+    XGBoost: subsample & $\{0.6, 0.7, 0.8, 0.9, 1\}$ \\
+    XGBoost: colsample\_bytree & $\{0.6, 0.7, 0.8, 0.9, \}$ \\
+    \end{tabular}
+    \caption{Failure prediction in Azure data set: Set of tuned parameters.}
+    \label{tab:experiments_failure_prediction_azure_parameters}
+\end{table}
+
+The hyperparameters we optimize are hyperparameters of the XGBoost algorithm and a size of the smoothing window.
+Table \ref{tab:experiments_failure_prediction_azure_parameters} summarizes all the tuned hyperparameters and the set of values we select from.
+
+Once we have all the models evaluated we visualize a pairplot to compare ranks of the individual models for every pair of the four evaluation metrics.
+Afterwards, we select a set of candidate models from the best ranked models, i.e. models ranked high by at least one metric.
+
+\subsubsection{PR Analysis}
+
+We use testing set to perform PR analysis of the candidate models selected in previous step.
+For every candidate model we calculate both classical and event-based precision and recall over different thresholds and visualize them.
+We then discuss whether and how the candidate models differ and whether the classical and event-based metrics differ in decision threshold selection.
+
+\begin{figure}[H]
+	\centering
+    \includegraphics[width=\textwidth,keepaspectratio]{%
+        experiments_failure_prediction_azure_correlation.pdf}
+	\caption{Failure prediction in Azure data set: Rankings of the models by various metrics based on the mean metrics' values on the testing cross-validation folds.}
+	\label{fig:experiments_failure_prediction_azure_correlation}
+\end{figure}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{lllll}
+    \toprule
+    {} & \multicolumn{3}{c}{candidate model} \\
+    {} & \multicolumn{1}{c}{A} &    \multicolumn{1}{c}{B} & \multicolumn{1}{c}{C}\\
+    \midrule
+    rank by AUPRG                     &         1 &        16 &        44 \\
+    rank by classical F1                        &        24 &         9 &         1 \\
+    rank by event-based F1                &         9 &         1 &        10 \\
+    AUPRG score                             &  0.999997 &  0.999991 &  0.999954 \\
+    classical F1 score                                &   0.95681 &  0.964553 &  0.969436 \\
+    event-based F1 score                        &  0.955075 &  0.961267 &  0.953946 \\
+    param\_smoothing\_window            &         1 &         7 &         1 \\
+    param\_estimator\_\_subsample        &       0.7 &       0.7 &       0.9 \\
+    param\_estimator\_\_n\_estimators     &        64 &        64 &       256 \\
+    param\_estimator\_\_min\_child\_weight &        16 &        16 &         1 \\
+    param\_estimator\_\_max\_depth        &         7 &         5 &         4 \\
+    param\_estimator\_\_learning\_rate    &      0.15 &       0.2 &       0.2 \\
+    param\_estimator\_\_colsample\_bytree &       0.6 &       0.6 &       0.9 \\
+    param\_estimator\_\_booster          &      dart &      dart &      dart \\
+    \bottomrule
+    \end{tabular}
+    \caption{Failure prediction in Azure data set: Ranks and parameters of the candidate models.}
+    \label{tab:experiments_failure_candidate_models}
+\end{table}
+
+\subsection{Results}
+
+Figure \ref{fig:experiments_failure_prediction_azure_correlation} shows a pair plot of the rankings of the 64 trained models.
+We can see that F1 and event-based F1 relatively agree in the ranking though they select slightly different model as best.
+AUPRG, on the other hand, highly disagrees with both F1 and event-based F1.
+For example the best model selected by F1 has rank between 40 and 50 (with 64 being the worst) by AUPRG.
+
+Table \ref{tab:experiments_failure_candidate_models} shows scores, ranks and hyperparameters of the models ranked as best by at least one metric.
+We can see that the models chosen by F1 and AUPRG have both smoothing window of size 1 while the model chosen by event-based F1 has smoothing window of size 7.
+This might be caused by the low amount of lone FP, i.e. the smoothing only unnecessarily delays the positive predictions and thus causes the precision and recall scores to be.
+As both the classical and event-based F1 scores are very high --- above 95 \% --- we can assume that most of the failures were predicted and that the predictions are made in the most of the prediction windows.
+
+\begin{figure}
+    \centering
+    \begin{subfigure}{.85\textwidth}
+        \includegraphics[width=\textwidth]{%
+            experiments_failure_prediction_azure_pr_curves_ts.pdf}
+        \caption{Classical PR curves}
+    \end{subfigure}
+    \begin{subfigure}{.85\textwidth}
+        \includegraphics[width=\textwidth]{%
+            experiments_failure_prediction_azure_pr_curves_reduced.pdf}
+        \caption{event-based PR curves}
+    \end{subfigure}
+    \caption{Failure prediction in Azure data set: Classical and event-based PR curves of the candidate models. Note, that both the x-axis and y-axis have range from 0.6 to 1.}
+    \label{fig:experiments_failure_prediction_azure_pr}
+\end{figure}
+
+\begin{figure}
+    \centering
+        \includegraphics[width=\textwidth]{%
+            experiments_failure_prediction_azure_multicurve_f1.pdf}
+    \caption{Failure prediction in Azure data set: Classical and event-based precision, recall and F1 scores over decision thresholds for the model selected by F1 score (model C). Note, that the y-axis has range from 0.86 to 1.}
+    \label{fig:experiments_failure_prediction_azure_multicurve}
+\end{figure}
+
+Figure \ref{fig:experiments_failure_prediction_azure_pr} shows both the classical and event-based PR curves for all the three candidate models.
+We can see that the models selected by classical F1 score (green curve) and AUPRG (blue curve) are comparable in terms of classical PR curve.
+However, the model selected by classical F1 has significantly better event-based PR curve than the model selected by AUPRG.
+This is surprising as the model selected by F1 score was scored very low by the AUPRG metric (rank 44 out of 64).
+It therefore suggests that a model that has good AUPRG score does not have to perform well regarding event-based metrics.
+Regarding the model selected by event-based F1 score, we can clearly see that it has significantly worse classical PR curve than the other two models.
+This is most probably caused by the smoothing --- the predictions at the beginning of the prediction window might have low probabilities.
+Regarding event-based PR curve, however, we see that the model selected by event-based F1 score is slightly better at high event-based precision values than the model selected by classical F1 score.
+This suggests that the smoothing might help achieve better results when high precision is important, i.e. when the false alarms are costly.
+
+If precision would be of high importance, we would choose the model selected by the event-based F1 score that smooths the predictions.
+However, since we do not know the exact costs of FP and FN, we choose the best performing model in overall.
+That is the model selected by classical F1 score as it has superior both classical PR and event-based PR curves over the other two models.
+Therefore, we use this model to compare how the classical and event-based differ in the decision threshold selection.
+
+Figure \ref{fig:experiments_failure_prediction_azure_multicurve} shows classical and event-based precision, recall and F1 scores over various decision thresholds for the model selected by classical F1 score.
+We can see that the event-based precision is significantly lower than the classical precision.
+That is caused by using the detection score instead of true positives and by using the discounted FP instead of standard FP.
+The size of the difference between the classical and event-based precision provides an insight into how are the FP close together --- the higher the difference the more distant are the FP from each other.
+The event-based recall, on the other hand, is higher than the classical recall.
+That is caused by using the detection score with an existence reward, i.e. having only a single prediction in the prediction window causes the detection score to be $> \alpha$, i.e. at least as big as the existence weight.
+In our case $\alpha = 0.8$, as mentioned in the experiment design. 
+This then leads to the highest value of event-based F1 score being at higher decision threshold (approx. 0.8) than the highest value of classical F1 score (approx. 0.4).
+In other words, the event-based metrics suggests that predicting only the samples that the model is more confident about as positive, i.e. selecting higher decision threshold, is likely to bring better precision without much of a decrease in recall.
+
+\subsection{Discussion}
+
+In this experiment we demonstrated failure prediction approach where we formulated the problem as a binary classification with an artificial labeling and we compared classical and event-based precision and recall metrics.
+
+Regarding model selection, the results show that using event-based F1 score as a metric for model selection can select a model that has better recall at high precision values than models selected by classical F1 score or AUPRG.
+However, in other cases the model selected by classical F1 score was better.
+The results of model selection also suggest that when using event-based metrics it might be worth trying different sizes of artificial labeling, i.e. try to artificially label either less than or more than $M$\footnote{size of the monitoring window} samples prior to the failure.
+In other words, the amount of artificial labeling might be another hyperparameter to tune.
+
+% Calculating the area under event-based precision recall curve can be computationally more expensive than training the model itself and using event-based F1 score, which uses predictions at fixed decision threshold, can lead to selecting a model that overly smooths the predictions.
+
+Regarding decision threshold selection and interpretability, our results show that event-based precision and recall might provide more realistic estimates of the model's precision and recall.
+Moreover, using the event-based metrics for decision threshold selection might advise to select a higher decision threshold than when the classical metrics are used.
+This implies that according to event-based metrics, better precision can be achieved without much of a loss in recall.
+This can be especially useful information when the false alarms are costly and thus precision should be high.
+
+Event-based metrics have several parameters that can be tuned such as the existence weight $\alpha$ or the positional bias function.
+It might be interesting to compare how the choice of these parameters affect the selection of the model.
+We consider this, however, as out of scope of this thesis.
+
+% To summarize, our experiment shows that event-based metrics are promising metrics for the interpreting the real-world performance of the model failure prediction models.
+% Moreover, we identified directions future research.

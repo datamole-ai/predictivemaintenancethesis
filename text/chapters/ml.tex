@@ -1,0 +1,286 @@
+\chapter{Machine Learning Background}
+\label{chapter:ml}
+
+\Acrfull{ml} is a an area of \acrshort{ai} that studies computer algorithms that improve through experience.
+In this chapter we provide a minimal theoretical background of machine learning necessary for the rest of this thesis.
+The content of this chapter can be, with a few exceptions, considered as a common knowledge.
+Therefore, we cite only where we deem it necessary or where we use direct definitions from literature.
+As we provide only the minimal theoretical background we refer to \cite{friedman2001elements, goodfellow2016deep, rokach2008data} for a comprehensive overview of machine learning and related fields.
+
+In Section \ref{sec:ml_tasks} we describe three different types of \acrshort{ml} algorithms --- supervised, unsupervised and semi-supervised.
+In Section \ref{sec:ml_problems}, we describe three machine learning problems --- classification, regression and anomaly detection.
+In Section \ref{sec:ml_models} we describe several \acrshort{ml} models.
+Finally, in Section \ref{sec:ml_evaluation}, we describe how to evaluate and select a machine learning model.
+
+\section{Types of Machine Learning Algorithms}
+\label{sec:ml_tasks}
+
+There exist four main types of machine learning algorithms: supervised learning, unsupervised learning, semi-supervised learning and reinforcement-learning.
+In this thesis, we use especially the first three of them and we describe them below.
+
+\paragraph{Supervised learning}
+
+Supervised learning algorithm learns from a set of labeled samples and builds models that can predict label for new unseen samples.
+
+\paragraph{Unsupervised learning}
+
+Unsupervised learning \acrshort{ml} algorithms consists in learning interesting or meaningful structures from a set of unlabeled samples.
+They help to understand the data.
+
+\paragraph{Semi-supervised learning}
+
+Semi-supervised machine learning is a combination of supervised and unsupervised learning.
+It makes use of both labeled and unlabeled samples to learn the relationship between the features and the target variable.
+Having both labeled and unlabeled samples is a common problem in practice --- e.g. we can have medical data about lots of patients but we might have only a small portion of them labeled (e.g. whether they were sick or not).
+
+\section{Machine Learning Problems}
+\label{sec:ml_problems}
+
+\subsection{Classification}
+
+Classification is a \acrshort{ml} problem of where the labels, the target variables, of the samples are categorical.
+A problem of diagnosing whether a patient suffers from a disease based on its health condition is an example of a classification problem.
+It is solved by supervised learning algorithms.
+Classification can be divided into a binary and a multiclass, i.e. predicting two classes or multiple classes, respectively.
+Many methods for classification are developed for binary classification.
+Therefore, multiclass classification can be regarded as its extension.
+In case of binary classification, the two classes are commonly named as positive and negative and the model's predictions can be thus either positive, i.e. belongs to a positive class, or negative, i.e. belongs to a negative class.
+
+Though the target variable is a category, a class, the classification can be done as predicting a probability of a sample belonging to the category.
+For example the model can predict that a probability that a patient is sick is 0.8 (and thus the probability that he/she isn't sick is 0.2 \%).
+The final prediction of the category then can be done by setting a decision threshold which defines the minimal probability necessary for the sample to be considered positive.
+A typical default threshold is 0.5.
+
+\subsection{Anomaly Detection}
+
+Anomaly detection is a machine learning problem where the goal is to identify the most anomalous samples.
+It is typically solved by unsupervised \acshort{ml} algorithms.
+The detection of anomalies is typically done by predicting some kind of anomaly score for each sample (e.g. distance from mean of the distribution of features in the training data) and setting a threshold that marks the samples with higher score than the threshold as anomalous.
+
+\subsection{Regression}
+
+Regression is a problem of identifying a relationship between the features and a continuous target variable.
+For example predicting price of houses based on their features like location, size or number of rooms is a regression problem.
+
+\section{Machine Learning Models}
+\label{sec:ml_models}
+
+In this section, we describe three examples of \acrshort{ml} models.
+We provide only brief description that is essential for the rest of this thesis.
+
+\subsection{Decision Tree}
+
+Decision tree is a supervised learning algorithm which can be used for both classification and regression problems.
+It consists in constructing a set of rules in a form of a tree where the leaves of the tree are assigned the values of a target variable (either class or a continuous variable).
+For example in case of patients diagnosis, the rules can be "Has temperature higher than 37 degrees?" or "Has difficult breathing?".
+The classification of a sample is then done by traversing through the tree, following the rules, and assigning it the value of the leaf where the sample ends.
+The primary objective in constructing the decision tree is that the rules should describe the data as best as possible --- that is done for example by finding such rules that minimize the entropy of the data when the data are divided by the rule.
+
+There exists plenty of variants of decision tree and their extensions.
+Random forest is a decision tree based algorithm where multiple decision trees are built and the output, the target variable, is then a mode or a mean of the outputs of the trees. 
+One of the currently best performing variant of decision trees is an algorithm called extreme gradient boosted trees \cite{xgboost}.
+It consists in building a large numbers of low complexity trees (weak learners) so that each tree predicts a length of a move in a direction of a gradient of a predefined loss function.
+Combining the predictions of these trees then leads to a single continuous predicted target variable (can be in a form of class probability).
+
+\subsection{SVM}
+
+\Acrfull{svm} is a supervised machine learning algorithm introduced by Vapnik \cite{cortes1995support} that is used for binary classification problem and can be extended to solve regression problem, in that case being called \acrshort{svr}.
+The main idea of SVM is to transform the samples into a higher dimensional space and find a hyperplane that best separates the two classes.
+The samples on the margins of the hyperplane are called support vectors, hence the name.
+
+\subsection{Artificial neural networks}
+
+\Acrfull is a computing system inspired by human brain and can be used to solve classification, regression and anomaly detection problems.
+It consists of a set of connected artificial neurons, cells, that can transmit information through the connections.
+The transmitted information is in a form of a real number whose is given by a sum of the neurons inputs, i.e. the information transmitted to it by other neurons, and some non-linear function.
+The neurons are typically structured in layers.
+The input, the features, are then typically given as an input information to the neuron in a so called input layer while the output, the target variable(s), is then an output of the so called output layer of neurons.
+Each neuron can have a weight that increases or decreases the amount of information transferred.
+The training of a \acrshort{ann} then consists in adjusting weights of the individual neurons so that the outputs of \acrshort{ann} is closer to the desired output.
+For more details work on how the \acrshort{ann} are trained we refer to \cite{goodfellow2016deep}.
+
+Each layer of \acrshort{ann} can perform different transformations and can have different number of neurons.
+The way how the neurons are organized into the layers and how they are connected to each other is called an \acrshort{ann} architecture.
+Below we provide an overview of common \acrshort{ann} architectures than we will refer to in the the rest of this thesis.
+
+\paragrapg{Feedforward}
+One of the basic architectures of \acrshort{ann} is a feedforward \acrshort{ann}.
+A feedforward \acrshort{ann} is such \acrshort{ann} where the connections between the neurons do not form a cycle, i.e. the information is transferred only in forward direction from the input layer to the output layer.
+
+\paragraph{Recurrent networks}
+Recurrent neural networks are derived from feedforward networks where, however, the connections can be cyclic.
+Recurrent neural networks can learn not only on single points but also on a series of data such as time series, sequences of words or videos.
+One of the most used recurrent neural networks is an \acrfull{lstm} network.
+
+\paragraph{Convolutional networks}
+Convolutional neural network are feedforward neural network that consist of layers where the information passed to neurons in next layer is modified by convolution operation with a filter composed of weights.
+It is commonly applied in problems where the input is in a form of an image.
+The filters then can have weights that for example detect edges and, when multiple convolutional layers are employed, even complex patterns can be recognized.
+
+\paragraph{Autoencoders}
+Autoencoders are type of \acrshort{ann} which are trained to reproduce the input to the output while internally representing the input in some compressed form, a code.
+One of the use cases for autoencoders is anomaly detection where the anomalies fed to the autoencoder are supposed to have a higher reconstruction error (difference between input and output) than the normal samples.
+The reconstruction error can thus be taken as the anomaly score.
+
+\section{Evaluation}
+\label{sec:ml_evaluation}
+
+Evaluation of a machine learning model consists in estimating how the model will perform on a randomly selected data, independent from the training data.
+Therefore, the evaluation typically consist in splitting the data set on a training and testing sets, using the training set to train the model and calculate evaluation metrics on a testing data set.
+
+The evaluation results have two major goals: to interpret the model's performance (e.g. what is a probability that a sick patient will be detected) and to select the best performing model out of multiple different trained models.
+The evaluation metrics used for the performance interpretation and model selection can be different as for example some metrics might be difficult to interpret in the domain.
+
+In this section we describe the various evaluation metrics used for both classification and regression problems\footnote{note, that anomaly detection can be evaluated using classification metrics if we have a labeled testing data set} and then we briefly describe the process of model selection.
+
+\subsection{Evaluation Metrics for Classification}
+
+Predictions of a binary classification can be expressed by a confusion matrix:
+\begin{center}
+    \begin{tabular}{cc|cc|}
+    \multicolumn{1}{c}{} & \multicolumn{1}{c|}{} &\multicolumn{2}{c|}{Actual} \\ 
+    \multicolumn{1}{c}{} & \multicolumn{1}{c|}{} &
+    \multicolumn{1}{c}{neg} & \multicolumn{1}{c|}{pos} \\ \hline
+    \multirow{2}{*}{{Predicted}}
+    & neg  & TN & FN   \\ 
+    & pos  & FP   & TP \\ \hline
+    & \multicolumn{1}{c}{} & \multicolumn{1}{c}{N} & \multicolumn{1}{c}{P} \\
+    \end{tabular}
+\end{center}
+where TP, FP, TN and FN stand for true positive, false positive, true negative and false negative, respectively.
+We also denote P and N as the number of total actual positives and negatives, respectively.
+
+Four commonly used metrics for evaluation of classification performance are:
+\begin{itemize}
+    \item $\text{\textit{accuracy}} = \frac{\text{TP} + \text{TN}}{\text{P} + \text{N}}$ --- a probability of a prediction being correct;
+    \item $\text{\textit{precision}} &= \frac{\text{TP}}{\text{TP} + \text{FP}}$ --- a probability that the actual label is positive when predicted as positive, e.g. a probability that a patient is actually sick when the model predicts he/she is sick;
+    \item $\text{\textit{recall}} &= \frac{\text{TP}}{\text{P}}$ --- a probability that an actual positive label is predicted as positive, also called a \acrfull{tpr}, e.g. a probability that a patient is predicted as sick given that he/she actually is sick;
+    \item $\text{\textit{\acrfull{fpr}}} &= \frac{\text{FP}}{\text{N}}$ --- a probability of a negative sample being predicted as positive, e.g. a probability that a healthy patient is diagnosed as sick.
+\end{itemize}
+
+A model having a high recall might have a low precision (e.g. a model that predicts only positive predictions) and vice versa.
+Therefore, precision and recall are commonly expressed by calculating their harmonic mean.
+Such constructed metric is called an F1 score and is formally defined as
+\begin{align*}
+    \text{F1 score} &= \frac{2 * \text{precision} * \text{recall}}{\text{precision} + \text{recall}}.
+\end{align*}
+
+\begin{figure}
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        medium_probas.pdf}
+    \caption{Predicting probabilities instead of classes}
+    \label{fig:ml_proba}
+    \centering
+\end{figure}
+
+Most of \gls{ml} binary classification and anomaly detection algorithms are capable of predicting a score --- a continuous variable like probability of belonging to the positive class or e.g. some measure of distance from the normal points in case of anomaly detectors.
+A classifier that predicts probabilities is commonly called probabilistic classifier.
+The actual classification (anomaly detection) is then done by setting a decision threshold --- if the score is equal or greater than the decision threshold the prediction is positive and vice versa (as illustrated in Figure \ref{fig:ml_proba}).
+
+A common decision threshold for supervised (binary) classification algorithms that predict probability is $0.5$ \cite{chen2006decision} which is typically where the F1 score is the highest.
+In anomaly detection, on the other hand, there is no universal threshold that can be set as the scores do not have the intuitive probabilistic interpretations.
+Moreover, it might happen, that FPs and FNs have each different severity.
+For example in a medical screening test it is wanted to have as few FNs\footnote{sick patients diagnosed as healthy} as possible even though that might yield many FPs.
+In other words, the medical screening tests should have a high recall and low precision is tolerated.
+On the other hand, for example anti-virus systems shouldn't raise too many false alarms, i.e. when they identify something as a positive they should be certain about it.
+In other words, anti-virus systems should have a high precision while lower recall might be tolerated.
+Setting a higher decision threshold typically leads to higher precision (though not necessarily) whereas setting a lower decision leads to higher recall.
+Therefore, selecting a decision threshold should be made with a good domain knowledge.
+
+\begin{figure}
+    \includegraphics[width=.85\textwidth, keepaspectratio]{%
+        medium_roc.png}
+    \caption{Precision, recall and FPR over various decision thresholds}
+    \label{fig:ml_decision}
+    \centering
+\end{figure}
+
+\begin{figure}
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        approaches_fd_evaluation_roc_pr.png}
+    \caption{ROC curve (left) and corresponding PR curve (right) \cite{flach2015precision}}
+    \label{fig:ml_roc_pr}
+    \centering
+\end{figure}
+
+One possible way how to analyze the models performance on various decision thresholds is visualizing precision, recall and FPR metrics over various decision thresholds as illustrated in Figure \ref{fig:ml_decision}.
+However, such visualization is dependent on the actual range of decision thresholds which does not have to be in range $[0, 1]$.
+Therefore, \acrfull{roc} and \acrfull{pr} curves are commonly used to visualize the performance over various thresholds.
+\Acrshort{roc} curve is a plot of \acrshort{tpr} (recall) over \acrshort{fpr} as illustrated in the left part of Figure \ref{fig:ml_roc_pr}.
+\Acrshort{pr} curve is then a plot of precision against recall as illustrated in the right part of Figure \ref{fig:ml_roc_pr}.
+
+ROC curve is non-decreasing --- when increasing the threshold, both TPR and FPR either stay the same or increase.
+Moreover, ROC has an important property that it is possible to construct a model at any point on a line connecting two points on an ROC curve.
+This can be achieved by combining the predictions from the models corresponding to the two points, e.g. selecting half of the predictions from a model A and half of the predictions from a model B results in a model that has performance corresponding exactly to the point in the middle of the line connecting the two models points on an ROC curve.
+This results in an existence of a universal baseline in an ROC curve --- a line connecting left lower and right upper corners which correspond to an always-negative model and an always-positive model.
+
+PR curve, on the other hand, does not have any universal baseline.
+Instead, the baseline is different for every data set and corresponds to a horizontal line at precision equal to prevalence ($\pi$) --- the ratio of positive samples in the data set.
+This baseline then corresponds to a performance of a random classifier.
+Moreover, the \acrshort{pr} curve does not have the property of linear interpolation as ROC curve does.
+This is mainly caused by the fact that PR curve is neither (non-)decreasing nor (non-)increasing.
+That is because increasing the decision threshold might decrease precision (as seen in Figure \ref{fig:ml_decision} where the precision decreased with increasing threshold from 0.3 to 0.4).
+However, PR curve does have one big advantage over ROC --- it is suitable for evaluating imbalanced data sets (data sets with low prevalence) as neither precision nor recall depend on the amount of true negatives.
+
+A domain knowledge is required to select the right decision threshold.
+If the domain knowledge is not available though, it might be desirable to select a model that performs best at regardless of the chosen decision threshold and leave the decision threshold selection for later.
+For that an area under curve \acrshort{roc} (\acrshort{auroc}) $\in [0, 1]$ is typically used.
+AUROC has even a natural explanation --- it estimates the probability that a randomly chosen positive is ranked higher by the model than a randomly chosen negative \cite{hand2001simple}.
+
+\begin{figure}
+    \includegraphics[width=\textwidth, keepaspectratio]{%
+        medium_pr_prg.png}
+    \caption{PR curve and a corresponding PRG curve \cite{flach2015precision}. The dotted lines represent F1 and F1-gain isometrics, respectively.}
+    \label{fig:ml_pr_prg}
+    \centering
+\end{figure}
+
+Maybe inspired by the AUROC, some researchers started using area under PR curve (AUPR) to evaluate models on imbalanced data sets.
+However, calculation of AUPR done via trapezodial rule (a common way how area under curve is calculated) is wrong as the points on the PR curve should not be linearly interpolated and selecting a model by AUPR might thus result in selecting a worse performing model \cite{flach2015precision}.
+To mitigate this problem, Flach et al. introduced \acrfull{prg} curve \cite{flach2015precision}.
+The main idea of PRG curves is to express the precision and recall in terms of gain over a baseline model --- a model that predicts always positive predictions.
+By using harmonic scaling:
+\begin{align*}
+    \frac{1/x - 1/\min}{1/\max - 1/\min} = \frac{\max(x-\min)}{(\max - \min)x}
+\end{align*}
+and taking $\min = \pi$ and $\max = 1$ precision-gain and recall-gain are defined as \cite{flach2015precision}:
+\begin{align*}
+    \text{precision-gain} &= \frac{\text{precision} - \pi}{(1 - \pi)\text{precision}} = 1 - \frac{\pi}{1 - \pi}\frac{\text{FP}}{\text{TP}}, \\\\
+    \text{recall-gain} &= \frac{\text{recall} - \pi}{(1 - \pi)\text{recall}} = 1 - \frac{\pi}{1 - \pi}\frac{\text{FN}}{\text{TP}}.
+\end{align*}
+A PRG curve is then a plot of precision-gain over recall-gain.
+Figure \ref{fig:ml_pr_prg} illustrates a PR curve and a corresponding PRG curve.
+Calculating area under \acrshort{prg} curve (\acrshort{auprg}) is then possible with a linear interpolation and is related to an expected F1 score \cite{flach2015precision}.
+
+\subsection{Evaluation Metrics for Regression}
+
+Prediction made by a regression model is a continuous variable.
+Let us denote $N$ the number of samples we are evaluating and $y_i$ and $\hat{y_i}$ the actual and predicted value of the i-th sample.
+A standard metrics for evaluating regression include
+\begin{align*}
+    \text{mean absolute error (MAE)} &= \frac{1}{N} \sum_{i=1}^{N}(y_i - \hat{y_i}),\\
+    \text{root mean squared error (RMSE)} &= \sqrt{\frac{1}{N}\sum_{i=1}^{N}{(y_t - \hat{y_i})^2}},\\
+    % \text{root mean squared logarithmic error (RMSLE)} &= \sqrt{\frac{1}{N}\sum_{i=1}^{N}{(\log{y_t} - \log{\hat{y_i}})^2}},\\
+    \text{mean absolute percentage error (MAPE)} &= \frac{1}{N} \sum_{i=1}^{N}\left|\frac{y_t - \hat{y_i}}{y_i}\right|.\\
+\end{align*}
+
+\acrshort{mae} is metric that gives the same weight to all errors.
+\Acrshort{rmse} gives more weight to high errors.
+\Acrshort{mape}, on the other hand, gives more weight to errors at low values as e.g. an error with $y=100$ and $y=150$ is equivalent to error $y=1$ and $y=1.5$ --- the error is 0.5 (or 50 \%).
+
+\subsection{Model Selection}
+
+Model selection is a process of selecting between either different machine learning algorithms (e.g. whether to use a decision tree or SVM) or selection of the best hyperparameters for a given model.
+The hyperparameters can be for example a maximal depth of a decision tree or a number of layers in an \acrshort{ann}.
+
+The model selection then typically consists in training multiple models, evaluating them and choosing the one that performs the best.
+In order to avoid selecting a model that is overfitted to a certain kind of data cross-validation is often used.
+
+\subsection{Cross-validation}
+\Acrfull{cv} is a technique used to evaluate how a model will perform on an independent data set.
+In its basic form, \acrshort{cv} consists in splitting a data set into multiple sets of same size called folds and performing multiple training and testing phases.
+In each phase one fold is selected as testing and the rest as training.
+The model is then build using the training folds and evaluated using the testing fold.
+A \acrshort{cv} using K folds is commonly called a K-fold \acrshort{cv}
+The output of the \acrshort{cv} are then K scores where K is the amount of folds and each score corresponds to a testing score of one fold.
+A mean of the scores over the testing folds is then commonly calculated and it can serve as a primary metric for model selection.
