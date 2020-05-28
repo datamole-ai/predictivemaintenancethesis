@@ -1,0 +1,7 @@
+!*.ipynb
+*.pdf
+*.csv
+data
+*.feather
+*.html
+images

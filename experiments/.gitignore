@@ -1,0 +1,45 @@
+# Data
+data
+
+# conda env dir
+.condaenv/
+
+# Jupyter Notebooks (now versioned as .md files)
+*.ipynb
+.ipynb_checkpoints
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Compiled python modules.
+*.pyc
+
+# Setuptools distribution folder.
+/dist/
+
+# docs build
+docs/_build
+docs/source
+
+# build files
+pmlib.egg-info/
+build/
+dist/
+
+# Tests
+.coverage
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# IDE files
+.idea/
+.vscode/
+
