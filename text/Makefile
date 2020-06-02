@@ -1,4 +1,4 @@
-SOURCE = DP_Lukany_Jan_2020
+SOURCE = DP_Jan_Lukany_2020
 
 all:
 	pdflatex $(SOURCE)
